@@ -32,13 +32,18 @@ namespace AIOrchestrator
             builder.Services.AddScoped<ContextMenuService>();
 
             // Load Default files
-            var folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
+            var folderPath = "";
+            var filePath = "";
+
+            // AIOrchestrator Directory
+            folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
-            var filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
+            // AIOrchestratorLog.csv
+            filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
 
             if (!File.Exists(filePath))
             {
@@ -63,7 +68,39 @@ namespace AIOrchestrator
                     streamWriter.WriteLine(file_content);
                     streamWriter.WriteLine("Application started at " + DateTime.Now);
                 }
+            }
 
+            // AIOrchestratorLog.csv
+            filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
+
+            if (!File.Exists(filePath))
+            {
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine("Application started at " + DateTime.Now);
+                }
+            }
+
+            // AIOrchestratorMemory.csv
+            filePath = Path.Combine(folderPath, "AIOrchestratorMemory.csv");
+
+            if (!File.Exists(filePath))
+            {
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now);
+                }
+            }
+
+            // AIOrchestratorDatabase.csv
+            filePath = Path.Combine(folderPath, "AIOrchestratorDatabase.csv");
+
+            if (!File.Exists(filePath))
+            {
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine("** AIOrchestratorDatabase started at " + DateTime.Now);
+                }
             }
 
             return builder.Build();
