@@ -103,6 +103,23 @@ namespace AIOrchestrator
                 }
             }
 
+            // AIOrchestratorSettings.config
+            filePath = Path.Combine(folderPath, "AIOrchestratorSettings.config");
+
+            if (!File.Exists(filePath))
+            {
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine(
+                        """
+                        "OpenAIServiceOptions": {
+                        "Organization": "** Your OpenAI Organization **",
+                        "ApiKey": "** Your OpenAI ApiKey **"
+                        };                        
+                        """);
+                }
+            }
+
             return builder.Build();
         }
     }
