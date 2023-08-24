@@ -24,11 +24,47 @@ namespace AIOrchestrator
 #endif
 
             builder.Services.AddSingleton<WeatherForecastService>();
+
             // Radzen
             builder.Services.AddScoped<DialogService>();
             builder.Services.AddScoped<NotificationService>();
             builder.Services.AddScoped<TooltipService>();
             builder.Services.AddScoped<ContextMenuService>();
+
+            // Load Default files
+            var folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            var filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
+
+            if (!File.Exists(filePath))
+            {
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine("Application started at " + DateTime.Now);
+                }
+            }
+            else
+            {
+                // File already exists
+                var file_content = "";
+                // Open the file to get existing content
+                using (var streamReader = new StreamReader(filePath))
+                {
+                    file_content = streamReader.ReadToEnd();
+                }
+
+                // Append the text to csv file
+                using (var streamWriter = new StreamWriter(filePath))
+                {
+                    streamWriter.WriteLine(file_content);
+                    streamWriter.WriteLine("Application started at " + DateTime.Now);
+                }
+
+            }
 
             return builder.Build();
         }
