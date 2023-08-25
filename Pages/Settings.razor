@@ -1,18 +1,19 @@
-﻿@inject NotificationService NotificationService
+﻿@using Newtonsoft.Json;
+@inject NotificationService NotificationService
 @inject DialogService DialogService
-<div Class="rz-p-0 rz-p-md-12">
-    <RadzenRow Gap="1rem">
-        <RadzenColumn Size="12" SizeSM="12">
-            <RadzenStack>
-                <RadzenFormField Text="Story Title:" Variant="@variant">
-                    @* <RadzenTextBox @bind-Value="@objStory.Title" /> *@
-                </RadzenFormField>
-                <RadzenFormField Text="Theme:" Variant="@variant">
-                    @* <RadzenTextArea @bind-Value="@objStory.Theme" /> *@
-                </RadzenFormField>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
+<div class="container-fluid">
+
+    <div>
+        <RadzenFormField Text="OpenAI Organization:" Variant="@variant">
+            <RadzenTextBox @bind-Value="@Organization" style="width:300px;" />
+        </RadzenFormField>
+    </div>
+    <div class="col-12">
+        <RadzenFormField Text="OpenAI ApiKey:" Variant="@variant">
+            <RadzenTextBox @bind-Value="@ApiKey" style="width:300px;" />
+        </RadzenFormField>
+    </div>
+
 </div>
 <br />
 <div class="row">
@@ -27,16 +28,41 @@
     IEnumerable<string> colStyles;
     Variant variant = Variant.Outlined;
 
+    dynamic AIOrchestratorSettingsObject;
+    string AIOrchestratorSettingsPath = "";
+    string AIOrchestratorSettings = "";
+    string Organization = "";
+    string ApiKey = "";
+
     protected override void OnInitialized()
     {
-        
+        // AIOrchestrator Directory
+        AIOrchestratorSettingsPath =
+        $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorSettings.config";
+
+        // Open the file to get existing content
+        using (var streamReader = new StreamReader(AIOrchestratorSettingsPath))
+        {
+            AIOrchestratorSettings = streamReader.ReadToEnd();
+        }
+
+        // Convert the JSON to a dynamic object
+        AIOrchestratorSettingsObject = JsonConvert.DeserializeObject(AIOrchestratorSettings);
+        Organization = AIOrchestratorSettingsObject.OpenAIServiceOptions.Organization;
+        ApiKey = AIOrchestratorSettingsObject.OpenAIServiceOptions.ApiKey;
     }
 
     private async Task SettingsSave()
     {
         try
         {
-            
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = "Saved",
+                    Duration = 4000
+                });
         }
         catch (Exception ex)
         {

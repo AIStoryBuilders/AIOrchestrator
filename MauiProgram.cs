@@ -56,6 +56,7 @@ namespace AIOrchestrator
             {
                 // File already exists
                 var file_content = "";
+
                 // Open the file to get existing content
                 using (var streamReader = new StreamReader(filePath))
                 {
@@ -112,10 +113,11 @@ namespace AIOrchestrator
                 {
                     streamWriter.WriteLine(
                         """
-                        "OpenAIServiceOptions": {
-                        "Organization": "** Your OpenAI Organization **",
-                        "ApiKey": "** Your OpenAI ApiKey **"
-                        };                        
+                        {
+                         "OpenAIServiceOptions": {
+                         "Organization": "** Your OpenAI Organization **",
+                         "ApiKey": "** Your OpenAI ApiKey **" } 
+                        }
                         """);
                 }
             }
