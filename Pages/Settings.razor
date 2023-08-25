@@ -1,0 +1,52 @@
+﻿@inject NotificationService NotificationService
+@inject DialogService DialogService
+<div Class="rz-p-0 rz-p-md-12">
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeSM="12">
+            <RadzenStack>
+                <RadzenFormField Text="Story Title:" Variant="@variant">
+                    @* <RadzenTextBox @bind-Value="@objStory.Title" /> *@
+                </RadzenFormField>
+                <RadzenFormField Text="Theme:" Variant="@variant">
+                    @* <RadzenTextArea @bind-Value="@objStory.Theme" /> *@
+                </RadzenFormField>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+<br />
+<div class="row">
+    <div class="col">
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Success"
+                      Click="SettingsSave"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+    </div>
+</div>
+@code {
+
+    IEnumerable<string> colStyles;
+    Variant variant = Variant.Outlined;
+
+    protected override void OnInitialized()
+    {
+        
+    }
+
+    private async Task SettingsSave()
+    {
+        try
+        {
+            
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+}
