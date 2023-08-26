@@ -3,12 +3,12 @@
 <h3>Logs</h3>
 <div class="row">
     <div class="col">
-        <RadzenButton Text="Clear Log" ButtonStyle="ButtonStyle.Warning"
+        <RadzenButton Text="Clear Log" ButtonStyle="ButtonStyle.Danger"
                       Click="ClearLog"
                       Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
     </div>
 </div>
-<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="true"
+<RadzenDataGrid AllowFiltering="false" AllowColumnResize="true" AllowAlternatingRows="true"
                 PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
                 Data="@AIOrchestratorLog" TItem="string" ColumnWidth="300px" ShowPagingSummary="true">
     <Columns>

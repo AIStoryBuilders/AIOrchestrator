@@ -83,7 +83,7 @@ namespace AIOrchestrator
             {
                 using (var streamWriter = new StreamWriter(filePath))
                 {
-                    streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now);
+                    streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now + ",");
                 }
             }
 
