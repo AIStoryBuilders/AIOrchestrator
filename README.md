@@ -6,6 +6,9 @@
 
 1. **Master Instructions**
     - How many iterations it can have
+    - Indicate what functions are avaliable
+    - Indicate when a function should be called
+    - Indicate when a function should not be called
 2. **Initial Start**
     - Builds a list of tasks in the Database from Initial Prompt
         - (Ask the LLM to create a list of steps)
