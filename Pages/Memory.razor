@@ -3,6 +3,9 @@
 <h3>Memory</h3>
 <div class="row">
     <div class="col">
+        <RadzenButton Text="Add Memory" ButtonStyle="ButtonStyle.Success"
+                      Click="AddMemory"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
         <RadzenButton Text="Clear Memory" ButtonStyle="ButtonStyle.Danger"
                       Click="ClearMemory"
                       Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
@@ -10,7 +13,7 @@
 </div>
 <RadzenDataGrid AllowFiltering="false" AllowColumnResize="true" AllowAlternatingRows="true"
                 PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
-                Data="@AIOrchestratorMemory" TItem="KeyValuePair<string, string>" ColumnWidth="300px" 
+                Data="@AIOrchestratorMemory" TItem="KeyValuePair<string, string>" ColumnWidth="300px"
                 ShowPagingSummary="true">
     <Columns>
         <RadzenDataGridColumn TItem="KeyValuePair<string, string>" Title="" Property="Key" />
@@ -38,6 +41,44 @@
             AIOrchestratorMemory.Add(column1, column2);
         }
     }
+
+    private async Task AddMemory()
+    {
+        try
+        {
+            string MemoryText = "";
+            // Display inline Radzen dialog to capture text
+            var result = await DialogService.OpenAsync("New Memory", ds =>
+            @<RadzenStack Gap="1.5rem">
+        <RadzenTextArea @bind-Value="@MemoryText" class="w-100" />
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Orientation="Orientation.Horizontal">
+                        <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+                        <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenStack>);
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = $"Memory Added: {MemoryText}",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
 
     private void ClearMemory()
     {
