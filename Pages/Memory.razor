@@ -8,6 +8,9 @@
         <RadzenButton Text="Add Memory" ButtonStyle="ButtonStyle.Success"
                       Click="AddMemory"
                       Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+        <RadzenButton Text="Search Memory" ButtonStyle="ButtonStyle.Info"
+                      Click="SearchMemory"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
         <RadzenButton Text="Clear Memory" ButtonStyle="ButtonStyle.Danger"
                       Click="ClearMemory"
                       Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
@@ -77,57 +80,132 @@
             // Display inline Radzen dialog to capture text
             var result = await DialogService.OpenAsync("New Memory", ds =>
             @<RadzenStack Gap="1.5rem">
-        <RadzenTextArea @bind-Value="@MemoryText" class="w-100" />
+                <RadzenTextArea @bind-Value="@MemoryText" class="w-100" />
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenStack Orientation="Orientation.Horizontal">
+                                <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+                                <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
+                            </RadzenStack>
+                        </RadzenStack>
+                </RadzenStack>
+            );
+
+            if (result)
+            {
+                // **** Call OpenAI and get embeddings for the memory text
+                // Create an instance of the OpenAI client
+                var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+                // Get the model details
+                var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+                // Get embeddings for the text
+                var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(MemoryText, model);
+                // Get embeddings as an array of floats
+                var EmbeddingVectors =
+                    embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+                // Loop through the embeddings
+                List<VectorData> AllVectors = new List<VectorData>();
+                for (int i = 0; i < EmbeddingVectors.Length; i++)
+                {
+                    var embeddingVector = new VectorData
+                        {
+                            VectorValue = EmbeddingVectors[i]
+                        };
+                    AllVectors.Add(embeddingVector);
+                }
+                // Convert the floats to a single string 
+                var VectorsToSave =
+                "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
+                // Write the memory to the .csv file
+                using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
+                {
+                    streamWriter.WriteLine(MemoryText + "," + VectorsToSave);
+                }
+
+                // Add the memory to the dictionary
+                AIOrchestratorMemory.Add(MemoryText, VectorsToSave);
+                await MemoryGrid.Reload();
+
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Success",
+                        Detail = $"Memory Added",
+                        Duration = 4000
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private async Task SearchMemory()
+    {
+        try
+        {
+            string SearchText = "";
+
+            // Display inline Radzen dialog to capture text
+            var result = await DialogService.OpenAsync("Search Memory", ds =>
+            @<RadzenStack Gap="1.5rem">
+                <RadzenTextArea @bind-Value="@SearchText" class="w-100" />
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
                     <RadzenStack Orientation="Orientation.Horizontal">
                         <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
                         <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
                     </RadzenStack>
                 </RadzenStack>
-        </RadzenStack>
-    );
+                </RadzenStack>
+            );
 
-            // **** Call OpenAI and get embeddings for the memory text
-            // Create an instance of the OpenAI client
-            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-            // Get the model details
-            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
-            // Get embeddings for the text
-            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(MemoryText, model);
-            // Get embeddings as an array of floats
-            var EmbeddingVectors =
-                embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
-            // Loop through the embeddings
-            List<VectorData> AllVectors = new List<VectorData>();
-            for (int i = 0; i < EmbeddingVectors.Length; i++)
+            if (result)
             {
-                var embeddingVector = new VectorData
-                    {
-                        VectorValue = EmbeddingVectors[i]
-                    };
-                AllVectors.Add(embeddingVector);
-            }
-            // Convert the floats to a single string 
-            var VectorsToSave =
-            "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
-
-            // Write the memory to the .csv file
-            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
-            {
-                streamWriter.WriteLine(MemoryText + "," + VectorsToSave);
-            }
-
-            // Add the memory to the dictionary
-            AIOrchestratorMemory.Add(MemoryText, VectorsToSave);
-            await MemoryGrid.Reload();
-
-            NotificationService.Notify(new NotificationMessage
+                // **** Call OpenAI and get embeddings for the memory text
+                // Create an instance of the OpenAI client
+                var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+                // Get the model details
+                var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+                // Get embeddings for the text
+                var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(SearchText, model);
+                // Get embeddings as an array of floats
+                var EmbeddingVectors =
+                    embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+                // Loop through the embeddings
+                List<VectorData> AllVectors = new List<VectorData>();
+                for (int i = 0; i < EmbeddingVectors.Length; i++)
                 {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Success",
-                    Detail = $"Memory Added",
-                    Duration = 4000
-                });
+                    var embeddingVector = new VectorData
+                        {
+                            VectorValue = EmbeddingVectors[i]
+                        };
+                    AllVectors.Add(embeddingVector);
+                }
+                // Convert the floats to a single string
+                var VectorsToSearch =
+                "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
+                // Display inline Radzen dialog to capture text
+                await DialogService.OpenAsync("Search Results", ds =>
+                @<RadzenStack Gap="1.5rem">
+                <RadzenTextArea @bind-Value="@VectorsToSearch" Rows=10 class="w-100" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenStack Orientation="Orientation.Horizontal">
+                            <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenStack>
+                );
+
+            }
+
         }
         catch (Exception ex)
         {
