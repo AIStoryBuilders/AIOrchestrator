@@ -1,4 +1,6 @@
-﻿@inject NotificationService NotificationService
+﻿@using Newtonsoft.Json;
+@using OpenAI;
+@inject NotificationService NotificationService
 @inject DialogService DialogService
 <h3>Memory</h3>
 <div class="row">
@@ -24,6 +26,13 @@
 @code {
     string AIOrchestratorMemoryPath = "";
     Dictionary<string, string> AIOrchestratorMemory = new Dictionary<string, string>();
+    string Organization = "";
+    string ApiKey = "";
+
+    public class VectorData
+    {
+        public double VectorValue { get; set; }
+    }
 
     protected override void OnInitialized()
     {
@@ -40,6 +49,23 @@
             // Add your values
             AIOrchestratorMemory.Add(column1, column2);
         }
+
+        // Get OpenAI API key from appsettings.json
+        // AIOrchestrator Directory
+        var AIOrchestratorSettingsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorSettings.config";
+
+        string AIOrchestratorSettings = "";
+
+        // Open the file to get existing content
+        using (var streamReader = new StreamReader(AIOrchestratorSettingsPath))
+        {
+            AIOrchestratorSettings = streamReader.ReadToEnd();
+        }
+
+        // Convert the JSON to a dynamic object
+        dynamic AIOrchestratorSettingsObject = JsonConvert.DeserializeObject(AIOrchestratorSettings);
+        Organization = AIOrchestratorSettingsObject.OpenAIServiceOptions.Organization;
+        ApiKey = AIOrchestratorSettingsObject.OpenAIServiceOptions.ApiKey;
     }
 
     private async Task AddMemory()
@@ -59,11 +85,35 @@
                 </RadzenStack>
             </RadzenStack>);
 
+            // **** Call OpenAI and get embeddings for the memory text
+            // Create an instance of the OpenAI client
+            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+            // Get the model details
+            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+            // Get embeddings for the text
+            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(MemoryText, model);
+            // Get embeddings as an array of floats
+            var EmbeddingVectors =
+                embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+            // Loop through the embeddings
+            List<VectorData> AllVectors = new List<VectorData>();
+            for (int i = 0; i < EmbeddingVectors.Length; i++)
+            {
+                var embeddingVector = new VectorData
+                    {
+                        VectorValue = EmbeddingVectors[i]
+                    };
+                AllVectors.Add(embeddingVector);
+            }
+            // Convert the floats to a single string 
+            var VectorsToSave =
+            "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
                     Summary = "Success",
-                    Detail = $"Memory Added: {MemoryText}",
+                    Detail = $"Memory Added: {MemoryText} - {VectorsToSave}",
                     Duration = 4000
                 });
         }
