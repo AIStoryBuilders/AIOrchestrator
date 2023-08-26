@@ -11,7 +11,7 @@
 @if (HomeVisible)
 {
     <h3>Home</h3>
-    <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="50" Rows="10" />
+    <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
 }
 @if (SettingsVisible)
 {
@@ -35,10 +35,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-        // using var reader = new StreamReader(stream);
+        using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
+        using var reader = new StreamReader(stream);
 
-        // ATaleofTwoCitiesRaw = reader.ReadToEnd();
+        ATaleofTwoCitiesRaw = reader.ReadToEnd();
     }
 
     void OnHomeClicked(MenuItemEventArgs args)

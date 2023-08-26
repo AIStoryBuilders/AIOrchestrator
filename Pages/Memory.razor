@@ -30,7 +30,7 @@
     RadzenDataGrid<KeyValuePair<string, string>> MemoryGrid;
     string AIOrchestratorMemoryPath = "";
     Dictionary<string, string> AIOrchestratorMemory = new Dictionary<string, string>();
-    List<(string?, float)> similarities = new List<(string?, float)>();
+    List<(string, float)> similarities = new List<(string, float)>();
 
     string Organization = "";
     string ApiKey = "";
@@ -179,7 +179,7 @@
                 var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
 
                 // Reset the similarities list
-                similarities = new List<(string?, float)>();
+                similarities = new List<(string, float)>();
 
                 // Calculate the similarity between the prompt's
                 // embedding and each existing embedding
