@@ -16,7 +16,7 @@
 <RadzenDataGrid AllowFiltering="false" AllowColumnResize="true" AllowAlternatingRows="true"
                 PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
                 Data="@AIOrchestratorMemory" TItem="KeyValuePair<string, string>" ColumnWidth="300px"
-                ShowPagingSummary="true">
+                ShowPagingSummary="true" @ref=MemoryGrid>
     <Columns>
         <RadzenDataGridColumn TItem="KeyValuePair<string, string>" Title="" Property="Key" />
     </Columns>
@@ -24,6 +24,7 @@
 
 
 @code {
+    RadzenDataGrid<KeyValuePair<string, string>> MemoryGrid;
     string AIOrchestratorMemoryPath = "";
     Dictionary<string, string> AIOrchestratorMemory = new Dictionary<string, string>();
     string Organization = "";
@@ -43,11 +44,10 @@
         @foreach (var line in System.IO.File.ReadAllLines(AIOrchestratorMemoryPath))
         {
             var splitLine = line.Split(',');
-            var column1 = splitLine[0];
-            var column2 = splitLine[1];
+            var KEY = splitLine[0];
+            var VALUE = splitLine[1];
 
-            // Add your values
-            AIOrchestratorMemory.Add(column1, column2);
+            AIOrchestratorMemory.Add(KEY, VALUE);
         }
 
         // Get OpenAI API key from appsettings.json
@@ -73,6 +73,7 @@
         try
         {
             string MemoryText = "";
+
             // Display inline Radzen dialog to capture text
             var result = await DialogService.OpenAsync("New Memory", ds =>
             @<RadzenStack Gap="1.5rem">
@@ -83,7 +84,8 @@
                         <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
                     </RadzenStack>
                 </RadzenStack>
-            </RadzenStack>);
+        </RadzenStack>
+    );
 
             // **** Call OpenAI and get embeddings for the memory text
             // Create an instance of the OpenAI client
@@ -109,11 +111,21 @@
             var VectorsToSave =
             "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
 
+            // Write the memory to the .csv file
+            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
+            {
+                streamWriter.WriteLine(MemoryText + "," + VectorsToSave);
+            }
+
+            // Add the memory to the dictionary
+            AIOrchestratorMemory.Add(MemoryText, VectorsToSave);
+            await MemoryGrid.Reload();
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
                     Summary = "Success",
-                    Detail = $"Memory Added: {MemoryText} - {VectorsToSave}",
+                    Detail = $"Memory Added",
                     Duration = 4000
                 });
         }
