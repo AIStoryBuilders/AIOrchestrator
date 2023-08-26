@@ -1,5 +1,39 @@
-﻿<h3>Home</h3>
-
+﻿@using Newtonsoft.Json;
+<h3>Home</h3>
+<RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
 @code {
+    private string ATaleofTwoCitiesRaw = "";
+    bool HomeVisible = true;
+    bool SettingsVisible = false;
+    bool MemoryVisible = false;
+    bool LogsVisible = false;
 
+    string Organization = "";
+    string ApiKey = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
+        using var reader = new StreamReader(stream);
+
+        ATaleofTwoCitiesRaw = reader.ReadToEnd();
+
+        // Get OpenAI API key from appsettings.json
+        // AIOrchestrator Directory
+        var AIOrchestratorSettingsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorSettings.config";
+
+        string AIOrchestratorSettings = "";
+
+        // Open the file to get existing content
+        using (var streamReader = new StreamReader(AIOrchestratorSettingsPath))
+        {
+            AIOrchestratorSettings = streamReader.ReadToEnd();
+        }
+
+        // Convert the JSON to a dynamic object
+        dynamic AIOrchestratorSettingsObject = JsonConvert.DeserializeObject(AIOrchestratorSettings);
+        Organization = AIOrchestratorSettingsObject.OpenAIServiceOptions.Organization;
+        ApiKey = AIOrchestratorSettingsObject.OpenAIServiceOptions.ApiKey;
+    }
+    
 }
