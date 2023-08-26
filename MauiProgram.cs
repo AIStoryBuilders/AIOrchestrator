@@ -87,14 +87,18 @@ namespace AIOrchestrator
                 }
             }
 
-            // AIOrchestratorDatabase.csv
-            filePath = Path.Combine(folderPath, "AIOrchestratorDatabase.csv");
+            // AIOrchestratorDatabase.json
+            filePath = Path.Combine(folderPath, "AIOrchestratorDatabase.json");
 
             if (!File.Exists(filePath))
             {
                 using (var streamWriter = new StreamWriter(filePath))
                 {
-                    streamWriter.WriteLine("** AIOrchestratorDatabase started at " + DateTime.Now);
+                    streamWriter.WriteLine(
+                        """
+                        {                         
+                        }
+                        """);
                 }
             }
 
