@@ -30,6 +30,8 @@
     RadzenDataGrid<KeyValuePair<string, string>> MemoryGrid;
     string AIOrchestratorMemoryPath = "";
     Dictionary<string, string> AIOrchestratorMemory = new Dictionary<string, string>();
+    List<(string?, float)> similarities = new List<(string?, float)>();
+
     string Organization = "";
     string ApiKey = "";
 
@@ -46,7 +48,7 @@
         // Read the lines from the .csv file
         @foreach (var line in System.IO.File.ReadAllLines(AIOrchestratorMemoryPath))
         {
-            var splitLine = line.Split(',');
+            var splitLine = line.Split('|');
             var KEY = splitLine[0];
             var VALUE = splitLine[1];
 
@@ -79,16 +81,16 @@
 
             // Display inline Radzen dialog to capture text
             var result = await DialogService.OpenAsync("New Memory", ds =>
-            @<RadzenStack Gap="1.5rem">
-                <RadzenTextArea @bind-Value="@MemoryText" class="w-100" />
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                            <RadzenStack Orientation="Orientation.Horizontal">
-                                <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
-                                <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
-                            </RadzenStack>
-                        </RadzenStack>
-                </RadzenStack>
-            );
+    @<RadzenStack Gap="1.5rem">
+        <RadzenTextArea @bind-Value="@MemoryText" class="w-100" />
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal">
+                <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+                <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenStack>
+    );
 
             if (result)
             {
@@ -100,26 +102,24 @@
                 // Get embeddings for the text
                 var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(MemoryText, model);
                 // Get embeddings as an array of floats
-                var EmbeddingVectors =
-                    embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+                var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
                 // Loop through the embeddings
                 List<VectorData> AllVectors = new List<VectorData>();
                 for (int i = 0; i < EmbeddingVectors.Length; i++)
                 {
                     var embeddingVector = new VectorData
-                        {
-                            VectorValue = EmbeddingVectors[i]
-                        };
+                            {
+                                VectorValue = EmbeddingVectors[i]
+                            };
                     AllVectors.Add(embeddingVector);
                 }
-                // Convert the floats to a single string 
-                var VectorsToSave =
-                "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+                // Convert the floats to a single string
+                var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
 
                 // Write the memory to the .csv file
                 using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
                 {
-                    streamWriter.WriteLine(MemoryText + "," + VectorsToSave);
+                    streamWriter.WriteLine(MemoryText + "|" + VectorsToSave);
                 }
 
                 // Add the memory to the dictionary
@@ -127,23 +127,23 @@
                 await MemoryGrid.Reload();
 
                 NotificationService.Notify(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Success",
-                        Detail = $"Memory Added",
-                        Duration = 4000
-                    });
+                        {
+                            Severity = NotificationSeverity.Success,
+                            Summary = "Success",
+                            Detail = $"Memory Added",
+                            Duration = 4000
+                        });
             }
         }
         catch (Exception ex)
         {
             NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = ex.Message,
+                        Duration = 4000
+                    });
         }
     }
 
@@ -155,16 +155,16 @@
 
             // Display inline Radzen dialog to capture text
             var result = await DialogService.OpenAsync("Search Memory", ds =>
-            @<RadzenStack Gap="1.5rem">
-                <RadzenTextArea @bind-Value="@SearchText" class="w-100" />
-                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                    <RadzenStack Orientation="Orientation.Horizontal">
-                        <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
-                        <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
-                    </RadzenStack>
-                </RadzenStack>
-                </RadzenStack>
-            );
+    @<RadzenStack Gap="1.5rem">
+        <RadzenTextArea @bind-Value="@SearchText" class="w-100" />
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal">
+                <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+                <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenStack>
+        );
 
             if (result)
             {
@@ -176,33 +176,47 @@
                 // Get embeddings for the text
                 var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(SearchText, model);
                 // Get embeddings as an array of floats
-                var EmbeddingVectors =
-                    embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
-                // Loop through the embeddings
-                List<VectorData> AllVectors = new List<VectorData>();
-                for (int i = 0; i < EmbeddingVectors.Length; i++)
+                var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+
+                // Reset the similarities list
+                similarities = new List<(string?, float)>();
+
+                // Calculate the similarity between the prompt's
+                // embedding and each existing embedding
+                foreach (var embedding in AIOrchestratorMemory)
                 {
-                    var embeddingVector = new VectorData
+                    if (embedding.Value != null)
+                    {
+                        if (embedding.Value != "")
                         {
-                            VectorValue = EmbeddingVectors[i]
-                        };
-                    AllVectors.Add(embeddingVector);
+                            var ConvertEmbeddingToFloats = JsonConvert.DeserializeObject<List<float>>(embedding.Value);
+
+                            var similarity =
+                            CosineSimilarity(
+                                EmbeddingVectors,
+                            ConvertEmbeddingToFloats.ToArray());
+
+                            similarities.Add((embedding.Key, similarity));
+                        }
+                    }
                 }
-                // Convert the floats to a single string
-                var VectorsToSearch =
-                "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
+                // Sort the results by similarity in descending order
+                similarities.Sort((a, b) => b.Item2.CompareTo(a.Item2));
+
+                var FinalResults = similarities.Take(10).ToList();
 
                 // Display inline Radzen dialog to capture text
                 await DialogService.OpenAsync("Search Results", ds =>
-                @<RadzenStack Gap="1.5rem">
-                <RadzenTextArea @bind-Value="@VectorsToSearch" Rows=10 class="w-100" />
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                        <RadzenStack Orientation="Orientation.Horizontal">
-                            <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
-                        </RadzenStack>
-                    </RadzenStack>
-                </RadzenStack>
-                );
+    @<RadzenStack Gap="1.5rem">
+        <RadzenListBox TValue="string" Data=@FinalResults Style="width: 100%; height:200px" />
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal">
+                <RadzenButton Text="Ok" Click="() => ds.Close(true)" Style="width: 80px;" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenStack>
+        );
 
             }
 
@@ -226,7 +240,7 @@
         {
             using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath))
             {
-                streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now + ",");
+                streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now + "|");
             }
 
             // Read the lines from the .csv file
@@ -258,5 +272,39 @@
                     Duration = 4000
                 });
         }
+    }
+
+    // Utility function to calculate cosine similarity
+
+    private float CosineSimilarity(float[] vector1, float[] vector2)
+    {
+        // Initialize variables for dot product and
+        // magnitudes of the vectors
+        float dotProduct = 0;
+        float magnitude1 = 0;
+        float magnitude2 = 0;
+
+        // Iterate through the vectors and calculate
+        // the dot product and magnitudes
+        for (int i = 0; i < vector1?.Length; i++)
+        {
+            // Calculate dot product
+            dotProduct += vector1[i] * vector2[i];
+
+            // Calculate squared magnitude of vector1
+            magnitude1 += vector1[i] * vector1[i];
+
+            // Calculate squared magnitude of vector2
+            magnitude2 += vector2[i] * vector2[i];
+        }
+
+        // Take the square root of the squared magnitudes
+        // to obtain actual magnitudes
+        magnitude1 = (float)Math.Sqrt(magnitude1);
+        magnitude2 = (float)Math.Sqrt(magnitude2);
+
+        // Calculate and return cosine similarity by dividing
+        // dot product by the product of magnitudes
+        return dotProduct / (magnitude1 * magnitude2);
     }
 }
