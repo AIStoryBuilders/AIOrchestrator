@@ -1,0 +1,82 @@
+﻿@inject NotificationService NotificationService
+@inject DialogService DialogService
+<h3>Logs</h3>
+<div class="row">
+    <div class="col">
+        <RadzenButton Text="Clear Log" ButtonStyle="ButtonStyle.Warning"
+                      Click="ClearLog"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+    </div>
+</div>
+<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="true"
+                PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
+                Data="@AIOrchestratorLog" TItem="string" ColumnWidth="300px" ShowPagingSummary="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="string" Title="Entry">
+            <Template>
+                @context
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+
+@code {
+    string AIOrchestratorLogPath = "";
+    string[] AIOrchestratorLog;
+
+    protected override void OnInitialized()
+    {
+        AIOrchestratorLogPath =
+        $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorLog.csv";
+
+        // Read the lines from the .csv file
+        using (var file = new System.IO.StreamReader(AIOrchestratorLogPath))
+        {
+            AIOrchestratorLog = file.ReadToEnd().Split('\n');
+            if (AIOrchestratorLog[AIOrchestratorLog.Length - 1].Trim() == "")
+            {
+                AIOrchestratorLog = AIOrchestratorLog.Take(AIOrchestratorLog.Length - 1).ToArray();
+            }
+        }
+    }
+
+    private void ClearLog()
+    {
+        try
+        {
+            using (var streamWriter = new StreamWriter(AIOrchestratorLogPath))
+            {
+                streamWriter.WriteLine(string.Join("\n", "Log cleared on " + DateTime.Now));
+            }
+
+            // Read the lines from the .csv file
+            using (var file = new System.IO.StreamReader(AIOrchestratorLogPath))
+            {
+                AIOrchestratorLog = file.ReadToEnd().Split('\n');
+                if (AIOrchestratorLog[AIOrchestratorLog.Length - 1].Trim() == "")
+                {
+                    AIOrchestratorLog = AIOrchestratorLog.Take(AIOrchestratorLog.Length - 1).ToArray();
+                }
+            }
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = "Log Cleared",
+                    Duration = 4000
+                });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+}

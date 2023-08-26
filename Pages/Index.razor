@@ -4,20 +4,34 @@
 @using Microsoft.AspNetCore.Components.Forms
 <RadzenMenu>
     <RadzenMenuItem Click="OnHomeClicked" Text="General" Icon="home"></RadzenMenuItem>
+    <RadzenMenuItem Click="OnMemoryClicked" Text="Memory" Icon="aspect_ratio"></RadzenMenuItem>
+    <RadzenMenuItem Click="OnLogsClicked" Text="Logs" Icon="assignment"></RadzenMenuItem>
     <RadzenMenuItem Click="OnSettingsClicked" Text="Settings" Icon="line_style"></RadzenMenuItem>
 </RadzenMenu>
 @if (HomeVisible)
 {
+    <h3>Home</h3>
     <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="50" Rows="10" />
 }
 @if (SettingsVisible)
 {
     <Settings></Settings>
 }
+@if (MemoryVisible)
+{
+    <Memory></Memory>
+}
+@if (LogsVisible)
+{
+    <Logs></Logs>
+}
 @code {
     private string ATaleofTwoCitiesRaw = "";
     bool HomeVisible = true;
     bool SettingsVisible = false;
+    bool MemoryVisible = false;
+    bool LogsVisible = false;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -31,11 +45,31 @@
     {
         HomeVisible = true;
         SettingsVisible = false;
+        MemoryVisible = false;
+        LogsVisible = false;
     }
 
     void OnSettingsClicked(MenuItemEventArgs args)
     {
         HomeVisible = false;
         SettingsVisible = true;
+        MemoryVisible = false;
+        LogsVisible = false;
+    }
+
+    void OnMemoryClicked(MenuItemEventArgs args)
+    {
+        HomeVisible = false;
+        SettingsVisible = false;
+        MemoryVisible = true;
+        LogsVisible = false;
+    }
+
+    void OnLogsClicked(MenuItemEventArgs args)
+    {
+        HomeVisible = false;
+        SettingsVisible = false;
+        MemoryVisible = false;
+        LogsVisible = true;
     }
 }

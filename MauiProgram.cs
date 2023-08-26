@@ -55,30 +55,24 @@ namespace AIOrchestrator
             else
             {
                 // File already exists
-                var file_content = "";
+                string[] AIOrchestratorLog;
 
                 // Open the file to get existing content
-                using (var streamReader = new StreamReader(filePath))
+                using (var file = new System.IO.StreamReader(filePath))
                 {
-                    file_content = streamReader.ReadToEnd();
+                    AIOrchestratorLog = file.ReadToEnd().Split('\n');
+
+                    if (AIOrchestratorLog[AIOrchestratorLog.Length - 1].Trim() == "")
+                    {
+                        AIOrchestratorLog = AIOrchestratorLog.Take(AIOrchestratorLog.Length - 1).ToArray();
+                    }
                 }
 
                 // Append the text to csv file
                 using (var streamWriter = new StreamWriter(filePath))
-                {
-                    streamWriter.WriteLine(file_content);
-                    streamWriter.WriteLine("Application started at " + DateTime.Now);
-                }
-            }
-
-            // AIOrchestratorLog.csv
-            filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
-
-            if (!File.Exists(filePath))
-            {
-                using (var streamWriter = new StreamWriter(filePath))
-                {
-                    streamWriter.WriteLine("Application started at " + DateTime.Now);
+                {                                        
+                    streamWriter.WriteLine(string.Join("\n", "Application started at " + DateTime.Now));
+                    streamWriter.WriteLine(string.Join("\n", AIOrchestratorLog));
                 }
             }
 

@@ -1,8 +1,8 @@
 ﻿@using Newtonsoft.Json;
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+<h3>Settings</h3>
 <div class="container-fluid">
-
     <div>
         <RadzenFormField Text="OpenAI Organization:" Variant="@variant">
             <RadzenTextBox @bind-Value="@Organization" style="width:300px;" />
@@ -13,7 +13,6 @@
             <RadzenTextBox @bind-Value="@ApiKey" style="width:450px;" />
         </RadzenFormField>
     </div>
-
 </div>
 <br />
 <div class="row">
@@ -25,7 +24,6 @@
 </div>
 @code {
 
-    IEnumerable<string> colStyles;
     Variant variant = Variant.Outlined;
 
     dynamic AIOrchestratorSettingsObject;
