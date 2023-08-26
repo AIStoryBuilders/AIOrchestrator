@@ -234,10 +234,12 @@
     }
 
 
-    private void ClearMemory()
+    private async Task ClearMemory()
     {
         try
         {
+            AIOrchestratorMemory = new Dictionary<string, string>();
+
             using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath))
             {
                 streamWriter.WriteLine("** AIOrchestratorMemory started at " + DateTime.Now + "|");
@@ -246,13 +248,13 @@
             // Read the lines from the .csv file
             @foreach (var line in System.IO.File.ReadAllLines(AIOrchestratorMemoryPath))
             {
-                var splitLine = line.Split(',');
-                var column1 = splitLine[0];
-                var column2 = splitLine[1];
+                var splitLine = line.Split('|');
+                var KEY = splitLine[0];
+                var VALUE = splitLine[1];
 
-                // Add your values
-                AIOrchestratorMemory.Add(column1, column2);
+                AIOrchestratorMemory.Add(KEY, VALUE);
             }
+            await MemoryGrid.Reload();
 
             NotificationService.Notify(new NotificationMessage
                 {
