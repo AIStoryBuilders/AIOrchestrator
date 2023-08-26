@@ -10,7 +10,7 @@
     </div>
     <div class="col-12">
         <RadzenFormField Text="OpenAI ApiKey:" Variant="@variant">
-            <RadzenTextBox @bind-Value="@ApiKey" style="width:300px;" />
+            <RadzenTextBox @bind-Value="@ApiKey" style="width:450px;" />
         </RadzenFormField>
     </div>
 
@@ -56,6 +56,19 @@
     {
         try
         {
+            // Update the dynamic object
+            AIOrchestratorSettingsObject.OpenAIServiceOptions.Organization = Organization;
+            AIOrchestratorSettingsObject.OpenAIServiceOptions.ApiKey = ApiKey;
+
+            // Convert the dynamic object back to JSON
+            AIOrchestratorSettings = JsonConvert.SerializeObject(AIOrchestratorSettingsObject, Formatting.Indented);
+
+            // Write the JSON back to the file
+            using (var streamWriter = new StreamWriter(AIOrchestratorSettingsPath))
+            {
+                await streamWriter.WriteAsync(AIOrchestratorSettings);
+            }
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
