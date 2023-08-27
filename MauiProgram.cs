@@ -1,4 +1,4 @@
-﻿using AIOrchestrator.Data;
+﻿using AIOrchestrator.Model;
 using Microsoft.Extensions.Logging;
 using Radzen;
 
@@ -23,7 +23,7 @@ namespace AIOrchestrator
 		builder.Logging.AddDebug();
 #endif
 
-            builder.Services.AddSingleton<WeatherForecastService>();
+            builder.Services.AddSingleton<SettingsService>();
 
             // Radzen
             builder.Services.AddScoped<DialogService>();

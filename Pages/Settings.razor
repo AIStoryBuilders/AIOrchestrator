@@ -1,6 +1,8 @@
-﻿@using Newtonsoft.Json;
+﻿@using AIOrchestrator.Model;
+@using Newtonsoft.Json;
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject SettingsService SettingsService
 <h3>Settings</h3>
 <div class="container-fluid">
     <div>
@@ -66,6 +68,8 @@
             {
                 await streamWriter.WriteAsync(AIOrchestratorSettings);
             }
+
+            SettingsService.ReloadSettings();
 
             NotificationService.Notify(new NotificationMessage
                 {
