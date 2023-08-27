@@ -1,17 +1,73 @@
 ﻿@using AIOrchestrator.Model;
 @using Newtonsoft.Json;
+@using OpenAI;
+@inject NotificationService NotificationService
+@inject DialogService DialogService
 @inject SettingsService SettingsService
+@inject OrchestratorMethods OrchestratorMethods
 <h3>Home</h3>
-<RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
+<div class="row">
+    <div class="col">
+        <RadzenButton Text="Load Text" ButtonStyle="ButtonStyle.Success"
+                      Click="LoadText"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+        <RadzenButton Text="Summarize Text" ButtonStyle="ButtonStyle.Info"
+                      Click="SummarizeText"
+                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+    </div>
+</div>
+
+<RadzenTabs TabPosition=TabPosition.Top RenderMode="TabRenderMode.Client">
+    <Tabs>
+        <RadzenTabsItem Text="Text">
+            <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="SummarizeText">
+            <RadzenTextArea @bind-Value=@txtSummarizeText Cols="70" Rows="10" />
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
 @code {
     private string ATaleofTwoCitiesRaw = "";
+    private string txtSummarizeText = "";
 
-    protected override async Task OnInitializedAsync()
+    private async Task LoadText()
     {
-        using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-        using var reader = new StreamReader(stream);
+        try
+        {
+            using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
+            using var reader = new StreamReader(stream);
 
-        ATaleofTwoCitiesRaw = reader.ReadToEnd();
+            ATaleofTwoCitiesRaw = reader.ReadToEnd();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private void SummarizeText()
+    {
+        try
+        {
+            txtSummarizeText = OrchestratorMethods.ReadText();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
     }
     
 }

@@ -24,6 +24,7 @@ namespace AIOrchestrator
 #endif
 
             builder.Services.AddSingleton<SettingsService>();
+            builder.Services.AddSingleton<OrchestratorMethods>();
 
             // Radzen
             builder.Services.AddScoped<DialogService>();
