@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using OpenAI.Files;
 
 namespace AIOrchestrator.Model
 {
@@ -9,8 +10,12 @@ namespace AIOrchestrator.Model
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
 
-            return Organization;
-        }
+            // Get AIOrchestratorDatabase.json
+            AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
+            string AIOrchestratorDatabase = objAIOrchestratorDatabase.ReadFile();
 
+            return AIOrchestratorDatabase;
+
+        }
     }
 }

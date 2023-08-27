@@ -6,23 +6,26 @@
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
 <h3>Home</h3>
-<div class="row">
-    <div class="col">
-        <RadzenButton Text="Load Text" ButtonStyle="ButtonStyle.Success"
-                      Click="LoadText"
-                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
-        <RadzenButton Text="Summarize Text" ButtonStyle="ButtonStyle.Info"
-                      Click="SummarizeText"
-                      Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
-    </div>
-</div>
-
 <RadzenTabs TabPosition=TabPosition.Top RenderMode="TabRenderMode.Client">
     <Tabs>
         <RadzenTabsItem Text="Text">
+            <div class="row">
+                <div class="col">
+                    <RadzenButton Text="Load Text" ButtonStyle="ButtonStyle.Success"
+                                  Click="LoadText"
+                                  Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+                </div>
+            </div>
             <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
         </RadzenTabsItem>
         <RadzenTabsItem Text="SummarizeText">
+            <div class="row">
+                <div class="col">
+                    <RadzenButton Text="Summarize Text" ButtonStyle="ButtonStyle.Info"
+                                  Click="SummarizeText"
+                                  Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+                </div>
+            </div>
             <RadzenTextArea @bind-Value=@txtSummarizeText Cols="70" Rows="10" />
         </RadzenTabsItem>
     </Tabs>
