@@ -55,11 +55,11 @@
         }
     }
 
-    private void SummarizeText()
+    private async Task SummarizeText()
     {
         try
         {
-            txtSummarizeText = OrchestratorMethods.ReadText();
+            txtSummarizeText = await OrchestratorMethods.ReadText();
         }
         catch (Exception ex)
         {
@@ -72,5 +72,5 @@
                 });
         }
     }
-    
+
 }

@@ -36,10 +36,22 @@ namespace AIOrchestrator.Model
             // Convert the dynamic object back to JSON
             var AIOrchestratorSettings = JsonConvert.SerializeObject(AIOrchestratorDatabaseObject, Formatting.Indented);
 
-            // Write the JSON back to the file
+            // Write the JSON to the file
             using (var streamWriter = new StreamWriter(filePath))
             {
                 await streamWriter.WriteAsync(AIOrchestratorSettings);
+            }
+        }
+
+        public async Task WriteFile(string AIOrchestratorDatabaseContent)
+        {
+            string folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
+            string filePath = Path.Combine(folderPath, "AIOrchestratorDatabase.json");
+
+            // Write the JSON to the file
+            using (var streamWriter = new StreamWriter(filePath))
+            {
+                await streamWriter.WriteAsync(AIOrchestratorDatabaseContent);
             }
         }
     }
