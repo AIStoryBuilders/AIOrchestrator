@@ -2,6 +2,18 @@
 ### A sub project of [AIStoryBuilders](https://github.com/ADefWebserver/AIStoryBuilders)
 ![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/d8bc287f-5493-44e0-bdb6-6019636b23cf)
 
+### Objective
+
+- Allow a LLM to perform a series of tasks
+    - Perform an unlimited number of tasks
+    - Never run out of tokens
+
+### Features
+
+- Uses functions to allow the LLM to track tasks
+- Uses functions to call a Database list to track current tasks and to create new ones
+- Uses functions to call a Memory vector database for items it needs to perform vector searches on
+
 ### Methods
 
 1. **Master Instructions**
