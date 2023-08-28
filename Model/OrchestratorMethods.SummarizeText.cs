@@ -16,6 +16,8 @@ namespace AIOrchestrator.Model
         #region public async Task<string> ReadText()
         public async Task<string> ReadText()
         {
+            LogService.WriteToLog("ReadText - Start");
+
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -50,6 +52,8 @@ namespace AIOrchestrator.Model
 
             // Add the existing Chat messages to chatPrompts
             chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);
+
+            LogService.WriteToLog($"SystemMessage: {SystemMessage}");
 
             // Call ChatGPT
             // Create a new ChatRequest object with the chat prompts and pass

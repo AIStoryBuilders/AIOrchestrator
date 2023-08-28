@@ -23,6 +23,7 @@ namespace AIOrchestrator
 		builder.Logging.AddDebug();
 #endif
 
+            builder.Services.AddSingleton<LogService>();
             builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<OrchestratorMethods>();
 
