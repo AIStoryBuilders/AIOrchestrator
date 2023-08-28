@@ -6,6 +6,12 @@
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
 <h3>Home</h3>
+@if (@InProgress)
+{
+    <div class="rz-m-12">
+        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+    </div>
+}
 <RadzenTabs TabPosition=TabPosition.Top RenderMode="TabRenderMode.Client">
     <Tabs>
         <RadzenTabsItem Text="Text">
@@ -33,15 +39,18 @@
 @code {
     private string ATaleofTwoCitiesRaw = "";
     private string txtSummarizeText = "";
+    bool InProgress = false;
 
     private async Task LoadText()
     {
         try
         {
+            InProgress = true;
             using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
             using var reader = new StreamReader(stream);
 
             ATaleofTwoCitiesRaw = reader.ReadToEnd();
+            InProgress = false;
         }
         catch (Exception ex)
         {
@@ -59,7 +68,9 @@
     {
         try
         {
+            InProgress = true;
             txtSummarizeText = await OrchestratorMethods.ReadText();
+            InProgress = false;
         }
         catch (Exception ex)
         {
