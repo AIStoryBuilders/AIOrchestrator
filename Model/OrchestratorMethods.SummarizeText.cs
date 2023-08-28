@@ -6,6 +6,8 @@ using OpenAI.Models;
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
 using System.Text.Json;
+using Newtonsoft.Json;
+using static AIOrchestrator.Model.OrchestratorMethods;
 
 namespace AIOrchestrator.Model
 {
@@ -40,6 +42,7 @@ namespace AIOrchestrator.Model
 
             // Pass AIOrchestratorDatabase.json to create the SystemMessage
             var paramAIOrchestratorDatabase = Newtonsoft.Json.JsonConvert.SerializeObject(AIOrchestratorSettingsObject, Newtonsoft.Json.Formatting.Indented);
+            LogService.WriteToLog($"paramAIOrchestratorDatabase: {paramAIOrchestratorDatabase}");
             SystemMessage = CreateSystemMessage(paramAIOrchestratorDatabase);
 
             // Create a new OpenAIClient object
@@ -51,9 +54,7 @@ namespace AIOrchestrator.Model
             List<Message> chatPrompts = new List<Message>();
 
             // Add the existing Chat messages to chatPrompts
-            chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);
-
-            LogService.WriteToLog($"SystemMessage: {SystemMessage}");
+            chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);            
 
             // Call ChatGPT
             // Create a new ChatRequest object with the chat prompts and pass
@@ -70,10 +71,16 @@ namespace AIOrchestrator.Model
 
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
+            // Update the total number of tokens used by the API
+            TotalTokens = TotalTokens + result.Usage.TotalTokens ?? 0;
+            LogService.WriteToLog($"TotalTokens - {TotalTokens}");
+
             // *****************************************************
             // See if as a response ChatGPT wants to call a function
             if (result.FirstChoice.FinishReason == "function_call")
             {
+                int FunctionCallCount = 0;
+
                 // Chat GPT wants to call a function
 
                 // To allow ChatGPT to call multiple functions
@@ -98,21 +105,33 @@ namespace AIOrchestrator.Model
 
                     result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
+                    // Update the total number of tokens used by the API
+                    TotalTokens = TotalTokens + result.Usage.TotalTokens ?? 0;
+                    LogService.WriteToLog($"TotalTokens - {TotalTokens}");
+
+                    LogService.WriteToLog($"result.FirstChoice.FinishReason - {result.FirstChoice.FinishReason}");
+
                     if (result.FirstChoice.FinishReason == "function_call")
                     {
                         // Keep looping
                         FunctionCallingComplete = false;
+                        FunctionCallCount = FunctionCallCount + 1;
+
+                        // Check if we have exceeded the maximum number of function calls
+                        if (FunctionCallCount > 10)
+                        {
+                            // Break out of the loop
+                            FunctionCallingComplete = true;
+                            LogService.WriteToLog($"* Breaking out of loop * FunctionCallCount - {FunctionCallCount}");
+                        }
                     }
                     else
                     {
                         // Break out of the loop
                         FunctionCallingComplete = true;
+                        LogService.WriteToLog($"FunctionCallCount - {FunctionCallCount}");
                     }
                 }
-            }
-            else
-            {
-                // ChatGPT did not want to call a function
             }
 
             // Create a new Message object with the response and other details
@@ -124,10 +143,7 @@ namespace AIOrchestrator.Model
                 Tokens = result.Usage.CompletionTokens ?? 0
             });
 
-            // Update the total number of tokens used by the API
-            TotalTokens = TotalTokens + result.Usage.TotalTokens ?? 0;
-
-            return "";
+            return result.FirstChoice.Message;
         }
         #endregion
 
@@ -150,22 +166,23 @@ namespace AIOrchestrator.Model
             {
                 case "Read_Text":
                     var objReadRequest =
-                    JsonSerializer.Deserialize<ReadRequest>(functionArgs);
+                    System.Text.Json.JsonSerializer.Deserialize<ReadRequestObject>(functionArgs);
 
                     if (objReadRequest != null)
                     {
-                        functionResult = ReadTextFromFile(objReadRequest.Readrequest.StartWordIndex);
+                        LogService.WriteToLog($"Read_Text - {functionArgs}");
+                        functionResult = await ReadTextFromFile(objReadRequest.ReadRequest.StartWordIndex);
                     }
                     break;
                 case "Write_Database":
                     var objWriteDatabaseRequest =
-                    JsonSerializer.Deserialize<WriteDatabaseRequest>(functionArgs);
+                    System.Text.Json.JsonSerializer.Deserialize<WriteDatabaseRequestObject>(functionArgs);
 
                     if (objWriteDatabaseRequest != null)
                     {
-                        // Save AIOrchestratorDatabase.json
+                        LogService.WriteToLog($"Write_Database - {functionArgs}");
                         AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                        await objAIOrchestratorDatabase.WriteFile(objWriteDatabaseRequest.WriteDatabaserequest.file_contents);
+                        await objAIOrchestratorDatabase.WriteFile(objWriteDatabaseRequest.WriteDatabaseRequest.file_contents);
                         functionResult = "{}";
                     }
                     break;
@@ -193,23 +210,27 @@ namespace AIOrchestrator.Model
         #endregion
 
         #region Function Parameters
-        public class ReadRequest
+        public class ReadRequestObject
         {
-            public readRequest Readrequest { get; set; }
+            [JsonProperty("ReadRequest")]
+            public ReadRequest ReadRequest { get; set; }
         }
 
-        public class readRequest
+        public class ReadRequest
         {
+            [JsonProperty("StartWordIndex")]
             public int StartWordIndex { get; set; }
+        }
+
+        public class WriteDatabaseRequestObject
+        {
+            [JsonProperty("WriteDatabaseRequest")]
+            public WriteDatabaseRequest WriteDatabaseRequest { get; set; }
         }
 
         public class WriteDatabaseRequest
         {
-            public Writedatabaserequest WriteDatabaserequest { get; set; }
-        }
-
-        public class Writedatabaserequest
-        {
+            [JsonProperty("file_contents")]
             public string file_contents { get; set; }
         }
         #endregion
@@ -333,6 +354,7 @@ namespace AIOrchestrator.Model
             string AIOrchestratorDatabase = objAIOrchestratorDatabase.ReadFile();
 
             return "You are a program that will be repeatedly called to read a large amount of text and to produce a summary\n" +
+                    "Only call a function or produse a summary do not output code\n" +
                     "You know what your current task is from the Tasks property in the Database.json file\n" +
                     "Only use information gathered from reading the Text\n" +
                     "Call the Read_Text function to receive json that will have a Text property that will contain a section of the Text to be summarized\n" +
@@ -348,19 +370,54 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-        #region private string ReadTextFromFile(int startWordIndex)
-        private string ReadTextFromFile(int startWordIndex)
+        #region private async Task<string> ReadTextFromFile(int startWordIndex)
+        private async Task<string> ReadTextFromFile(int startWordIndex)
         {
+            // Read the text from the file
+            using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
+            using var reader = new StreamReader(stream);
+
+            var ATaleofTwoCitiesRaw = reader.ReadToEnd();
+
+            // Split the text into words
+            string[] ATaleofTwoCitiesWords = ATaleofTwoCitiesRaw.Split(
+                               new char[] { ' ', '\t', '\n', '\r' },
+                                              StringSplitOptions.RemoveEmptyEntries);
+
+            // Get the total number of words
+            int TotalWords = ATaleofTwoCitiesWords.Length;
+
+            // Get 200 words starting at the startWordIndex
+            string[] ATaleofTwoCitiesWords200 = ATaleofTwoCitiesWords.Skip(startWordIndex).Take(200).ToArray();
+
+            // Set the current word to the startWordIndex + 200
+            int CurrentWord = startWordIndex + 200;
+
+            if (CurrentWord >= TotalWords)
+            {
+                // Set the current word to the total words
+                CurrentWord = TotalWords;
+
+                // Set the start word index to 0
+                startWordIndex = 0;
+            }
+
             string ReadTextFromFileResponse = """
                         {
-                         "Text": "",
-                         "CurrentWord": 1,
-                         "TotalWords": 100,
+                         "Text": "{ATaleofTwoCitiesWords200}",
+                         "CurrentWord": {CurrentWord},
+                         "TotalWords": {TotalWords},
                         }
                         """;
 
+            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{ATaleofTwoCitiesWords200}", string.Join(" ", ATaleofTwoCitiesWords200));
+            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{CurrentWord}", CurrentWord.ToString());
+            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
+
+            LogService.WriteToLog($"ReadTextFromFileResponse - {ReadTextFromFileResponse}");
+
             return ReadTextFromFileResponse;
-        } 
+        }
         #endregion
     }
 }

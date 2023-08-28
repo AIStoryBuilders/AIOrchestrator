@@ -49,6 +49,9 @@ namespace AIOrchestrator.Model
             // Append the text to csv file
             using (var streamWriter = new StreamWriter(AIOrchestratorLogPath))
             {
+                // Remove line breaks from the log text
+                LogText = LogText.Replace("\n", " ");
+
                 streamWriter.WriteLine(LogText);
                 streamWriter.WriteLine(string.Join("\n", AIOrchestratorLog));
             }
