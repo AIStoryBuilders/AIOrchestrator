@@ -25,6 +25,8 @@ namespace AIOrchestrator.Model
             string SystemMessage = "";
             int TotalTokens = 0;
 
+            ChatMessages = new List<ChatMessage>();
+
             // **** Create AIOrchestratorDatabase.json
             // Store Tasks in the Database as an array in a single property
             // Store the Last Read Index as a Property in Database
@@ -124,6 +126,13 @@ namespace AIOrchestrator.Model
                             FunctionCallingComplete = true;
                             LogService.WriteToLog($"* Breaking out of loop * FunctionCallCount - {FunctionCallCount}");
                         }
+
+                        // Update System Message
+                        LogService.WriteToLog($"objAIOrchestratorDatabase: {objAIOrchestratorDatabase.ReadFile()}");
+                        SystemMessage = CreateSystemMessage(objAIOrchestratorDatabase.ReadFile());
+
+                        // Add the existing Chat messages to chatPrompts (removing excess messages)
+                        chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);
                     }
                     else
                     {
@@ -143,6 +152,7 @@ namespace AIOrchestrator.Model
                 Tokens = result.Usage.CompletionTokens ?? 0
             });
 
+            LogService.WriteToLog($"result.FirstChoice.Message - {result.FirstChoice.Message}");
             return result.FirstChoice.Message;
         }
         #endregion
@@ -306,6 +316,12 @@ namespace AIOrchestrator.Model
             // Loop through the ChatMessages and add them to the LinkedList
             foreach (var item in ChatMessages)
             {
+                // Do not add the system message to the chat prompts
+                // because we will add this manully later
+                if (item.Prompt == SystemMessage)
+                {
+                    continue;
+                }
                 ChatPromptsLinkedList.AddLast(item);
             }
 
@@ -354,9 +370,8 @@ namespace AIOrchestrator.Model
             string AIOrchestratorDatabase = objAIOrchestratorDatabase.ReadFile();
 
             return "You are a program that will be repeatedly called to read a large amount of text and to produce a summary\n" +
-                    "Only call a function or produse a summary do not output code\n" +
+                    "Only call a function or produce a summary do not output code\n" +
                     "You know what your current task is from the Tasks property in the Database.json file\n" +
-                    "Only use information gathered from reading the Text\n" +
                     "Call the Read_Text function to receive json that will have a Text property that will contain a section of the Text to be summarized\n" +
                     "When a Task is completed call the Write_Database function to update the Tasks Property in the Database.json file by removing the task\n" +
                     "Call the Write_Database function to update the Summary property in the Database.json file to store the text summary and update the Tasks property in the Database.json file to remove all the tasks\n" +
@@ -366,6 +381,7 @@ namespace AIOrchestrator.Model
                     "\tCall the Write_Database function to update the Tasks property in the Database.json file to indicate it needs to keep reading\n" +
                     "If Read_Text function returns json that indicates the CurrentWord property is equal to the TotalWords property call the Write_Database function to update and remove \"Read Text\" from Tasks collection in Database.json\n" +
                     "If the Tasks property in the Database.json file says \"Summarize Text\" output **SUMMARY** followed by the contents of the Summary property in the Database.json file\n" +
+                    " In the summary only use information gathered from reading the Text\n" +
                     $"Current contents of the Database.json file is: {paramAIOrchestratorDatabase}";
         }
         #endregion
