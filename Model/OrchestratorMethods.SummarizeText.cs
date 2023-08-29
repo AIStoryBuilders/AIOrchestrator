@@ -33,7 +33,7 @@ namespace AIOrchestrator.Model
             // Store Summary as a Property in the Database
             dynamic AIOrchestratorSettingsObject = new
             {
-                Tasks = new string[] { "Read Text", "Summarize Text" },
+                CurrentTask = "Read Text",
                 LastWordRead = 0,
                 Summary = ""
             };
@@ -56,7 +56,7 @@ namespace AIOrchestrator.Model
             List<Message> chatPrompts = new List<Message>();
 
             // Add the existing Chat messages to chatPrompts
-            chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);            
+            chatPrompts = AddExistingChatMessags(chatPrompts, SystemMessage);
 
             // Call ChatGPT
             // Create a new ChatRequest object with the chat prompts and pass
@@ -112,6 +112,10 @@ namespace AIOrchestrator.Model
                     LogService.WriteToLog($"TotalTokens - {TotalTokens}");
 
                     LogService.WriteToLog($"result.FirstChoice.FinishReason - {result.FirstChoice.FinishReason}");
+
+                    // Read AIOrchestratorDatabase.json
+                    objAIOrchestratorDatabase = new AIOrchestratorDatabase();
+                    var Databasefile = objAIOrchestratorDatabase.ReadFile();
 
                     if (result.FirstChoice.FinishReason == "function_call")
                     {
@@ -184,18 +188,6 @@ namespace AIOrchestrator.Model
                         functionResult = await ReadTextFromFile(objReadRequest.ReadRequest.StartWordIndex);
                     }
                     break;
-                case "Write_Database":
-                    var objWriteDatabaseRequest =
-                    System.Text.Json.JsonSerializer.Deserialize<WriteDatabaseRequestObject>(functionArgs);
-
-                    if (objWriteDatabaseRequest != null)
-                    {
-                        LogService.WriteToLog($"Write_Database - {functionArgs}");
-                        AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                        await objAIOrchestratorDatabase.WriteFile(objWriteDatabaseRequest.WriteDatabaseRequest.file_contents);
-                        functionResult = "{}";
-                    }
-                    break;
                 default:
                     break;
             }
@@ -231,18 +223,6 @@ namespace AIOrchestrator.Model
             [JsonProperty("StartWordIndex")]
             public int StartWordIndex { get; set; }
         }
-
-        public class WriteDatabaseRequestObject
-        {
-            [JsonProperty("WriteDatabaseRequest")]
-            public WriteDatabaseRequest WriteDatabaseRequest { get; set; }
-        }
-
-        public class WriteDatabaseRequest
-        {
-            [JsonProperty("file_contents")]
-            public string file_contents { get; set; }
-        }
         #endregion
 
         #region private List<Function> GetDefinedFunctions()
@@ -252,8 +232,7 @@ namespace AIOrchestrator.Model
                 {
                     new Function(
                         "Read_Text",
-                        @"Used to read a section of text to be summarized.
-                          Use this function to retrieve a section of text.".Trim(),
+                        @"Used to read a section of text to be summarized. Use this function to retrieve a section of text.",
                         new JsonObject
                         {
                             ["type"] = "object",
@@ -267,39 +246,13 @@ namespace AIOrchestrator.Model
                                         ["StartWordIndex"] = new JsonObject
                                         {
                                             ["type"] = "integer",
-                                            ["description"] = @"The index position of 
-                                                                the word in the text to start retrieving text.".Trim()
+                                            ["description"] = @"The index position of the word in the text to start retrieving text."
                                         }
                                     },
                                     ["required"] = new JsonArray { "StartWordIndex" }
                                 }
                             },
                             ["required"] = new JsonArray { "ReadRequest" }
-                        }),
-                    new Function(
-                        "Write_Database",
-                        @"Used to update the AIOrchestratorDatabase.json file.
-                          Use this function set the contents of the AIOrchestratorDatabase.json.".Trim(),
-                        new JsonObject
-                        {
-                            ["type"] = "object",
-                            ["properties"] = new JsonObject
-                            {
-                                ["WriteDatabaseRequest"] = new JsonObject
-                                {
-                                    ["type"] = "object",
-                                    ["properties"] = new JsonObject
-                                    {
-                                        ["file_contents"] = new JsonObject
-                                        {
-                                            ["type"] = "string",
-                                            ["description"] = @"The new contents of the AIOrchestratorDatabase.json file."
-                                        }
-                                    },
-                                    ["required"] = new JsonArray { "file_contents" }
-                                }
-                            },
-                            ["required"] = new JsonArray { "WriteDatabaseRequest" }
                         })
                 };
 
@@ -369,19 +322,13 @@ namespace AIOrchestrator.Model
             AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
             string AIOrchestratorDatabase = objAIOrchestratorDatabase.ReadFile();
 
-            return "You are a program that will be repeatedly called to read a large amount of text and to produce a summary\n" +
-                    "Only call a function or produce a summary do not output code\n" +
-                    "You know what your current task is from the Tasks property in the Database.json file\n" +
-                    "Call the Read_Text function to receive json that will have a Text property that will contain a section of the Text to be summarized\n" +
-                    "When a Task is completed call the Write_Database function to update the Tasks Property in the Database.json file by removing the task\n" +
-                    "Call the Write_Database function to update the Summary property in the Database.json file to store the text summary and update the Tasks property in the Database.json file to remove all the tasks\n" +
-                    "If the Tasks property in the Database.json file says \"Read Text\" call the Read_Text function to retrieve a section of text to summarize\n" +
-                    "\tCall the Write_Database function to update the LastWordRead property in the Database.json file to track progress\n" +
-                    "\tTo keep track of the current position in the text, call the Write_Database function to update the number in the LastWordRead property in the Database.json file\n" +
-                    "\tCall the Write_Database function to update the Tasks property in the Database.json file to indicate it needs to keep reading\n" +
-                    "If Read_Text function returns json that indicates the CurrentWord property is equal to the TotalWords property call the Write_Database function to update and remove \"Read Text\" from Tasks collection in Database.json\n" +
-                    "If the Tasks property in the Database.json file says \"Summarize Text\" output **SUMMARY** followed by the contents of the Summary property in the Database.json file\n" +
-                    " In the summary only use information gathered from reading the Text\n" +
+            return "You are a program that will be repeatedly called to read a large amount of text and to produce a summary.\n" +
+                    "Only call a function or produce a summary do not output code.\n" +
+                    "You know what your current task is from the CurrentTask property in the Database.json file.\n" +
+                    "If the CurrentTask property in the Database.json file says \"Read Text\" call the Read_Text function to retrieve a section of text to summarize.\n" +
+                    "Output a summary of the text combined with the contents of the Summary property in the Database.json file.\n" +
+                    "If the CurrentTask property in the Database.json file says \"Summarize Text\" output the contents of the Summary property in the Database.json file.\n" +
+                    "In the summary only use information gathered from reading the Text.\n" +
                     $"Current contents of the Database.json file is: {paramAIOrchestratorDatabase}";
         }
         #endregion
@@ -413,10 +360,19 @@ namespace AIOrchestrator.Model
             {
                 // Set the current word to the total words
                 CurrentWord = TotalWords;
-
-                // Set the start word index to 0
-                startWordIndex = 0;
             }
+
+            // Update the Database.json file
+            dynamic AIOrchestratorSettingsObject = new
+            {
+                CurrentTask = new string[] { "Read Text" },
+                LastWordRead = CurrentWord,
+                Summary = ""
+            };
+
+            // Save AIOrchestratorDatabase.json
+            AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
+            objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
 
             string ReadTextFromFileResponse = """
                         {
