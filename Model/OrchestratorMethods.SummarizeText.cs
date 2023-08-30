@@ -65,7 +65,7 @@ namespace AIOrchestrator.Model
                 chatPrompts,
                 functions: GetDefinedFunctions(),
                 functionCall: "auto",
-                model: "gpt-3.5-turbo-0613", // Must use this model or higher
+                model: "gpt-3.5-turbo-0613", 
                 temperature: 0.0,
                 topP: 1,
                 frequencyPenalty: 0,
@@ -99,7 +99,7 @@ namespace AIOrchestrator.Model
                         chatPrompts,
                         functions: GetDefinedFunctions(),
                         functionCall: "auto",
-                        model: "gpt-3.5-turbo-0613", // Must use this model or higher
+                        model: "gpt-3.5-turbo-0613", 
                         temperature: 0.0,
                         topP: 1,
                         frequencyPenalty: 0,
@@ -112,10 +112,6 @@ namespace AIOrchestrator.Model
                     LogService.WriteToLog($"TotalTokens - {TotalTokens}");
 
                     LogService.WriteToLog($"result.FirstChoice.FinishReason - {result.FirstChoice.FinishReason}");
-
-                    // Read AIOrchestratorDatabase.json
-                    objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                    var Databasefile = objAIOrchestratorDatabase.ReadFile();
 
                     if (result.FirstChoice.FinishReason == "function_call")
                     {
@@ -185,7 +181,41 @@ namespace AIOrchestrator.Model
                     if (objReadRequest != null)
                     {
                         LogService.WriteToLog($"Read_Text - {functionArgs}");
+
+                        // Read the Text from the file
                         functionResult = await ReadTextFromFile(objReadRequest.ReadRequest.StartWordIndex);
+
+                        // *****************************************************
+                        dynamic ReadTextFromFileObject = JsonConvert.DeserializeObject(functionResult);
+                        string ReadTextFromFileText = ReadTextFromFileObject.Text;
+                        int intCurrentWord = ReadTextFromFileObject.CurrentWord;
+                        int intTotalWords = ReadTextFromFileObject.TotalWords;
+
+                        // *****************************************************
+                        // Read AIOrchestratorDatabase.json
+                        var objAIOrchestratorDatabase = new AIOrchestratorDatabase();
+                        dynamic Databasefile = objAIOrchestratorDatabase.ReadFileDynamic();
+
+                        string strCurrentTask = Databasefile.CurrentTask;
+                        int intLastWordRead = intCurrentWord;
+                        string strSummary = Databasefile.Summary;
+
+                        // If we are done reading the text, then summarize it
+                        if (intCurrentWord >= intTotalWords)
+                        {
+                            strCurrentTask = "Summarize Text";
+                        }                        
+
+                        // Prepare object to save to AIOrchestratorDatabase.json
+                        dynamic AIOrchestratorSettingsObject = new
+                        {
+                            CurrentTask = strCurrentTask,
+                            LastWordRead = intLastWordRead,
+                            Summary = strSummary
+                        };
+
+                        // Update the AIOrchestratorDatabase.json file
+                        objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
                     }
                     break;
                 default:
@@ -365,7 +395,7 @@ namespace AIOrchestrator.Model
             // Update the Database.json file
             dynamic AIOrchestratorSettingsObject = new
             {
-                CurrentTask = new string[] { "Read Text" },
+                CurrentTask = "Read Text",
                 LastWordRead = CurrentWord,
                 Summary = ""
             };

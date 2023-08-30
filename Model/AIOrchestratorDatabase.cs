@@ -28,6 +28,23 @@ namespace AIOrchestrator.Model
             return response;
         }
 
+        public dynamic ReadFileDynamic()
+        {
+            string FileContents;
+            string folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
+            string filePath = Path.Combine(folderPath, "AIOrchestratorDatabase.json");
+
+            // Open the file to get existing content
+            using (var streamReader = new StreamReader(filePath))
+            {
+                FileContents = streamReader.ReadToEnd();
+            }
+
+            dynamic AIOrchestratorDatabaseObject = JsonConvert.DeserializeObject(FileContents);
+
+            return AIOrchestratorDatabaseObject;
+        }
+
         public async Task WriteFile(dynamic AIOrchestratorDatabaseObject)
         {
             string folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator";
