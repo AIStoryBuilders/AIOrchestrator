@@ -390,19 +390,7 @@ namespace AIOrchestrator.Model
             {
                 // Set the current word to the total words
                 CurrentWord = TotalWords;
-            }
-
-            // Update the Database.json file
-            dynamic AIOrchestratorSettingsObject = new
-            {
-                CurrentTask = "Read Text",
-                LastWordRead = CurrentWord,
-                Summary = ""
-            };
-
-            // Save AIOrchestratorDatabase.json
-            AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-            objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
+            }           
 
             string ReadTextFromFileResponse = """
                         {
