@@ -102,8 +102,35 @@
         {
             InProgress = true;
 
+            ClearLog();
+
             txtSummarizeText = await OrchestratorMethods.ReadText(SelectedFile, intMaxLoops, intChunkSize);
             InProgress = false;
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    // Utility
+
+    private void ClearLog()
+    {
+        try
+        {
+            var AIOrchestratorLogPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorLog.csv";
+
+            using (var streamWriter = new StreamWriter(AIOrchestratorLogPath))
+            {
+                streamWriter.WriteLine(string.Join("\n", "Log cleared on " + DateTime.Now));
+            }
         }
         catch (Exception ex)
         {
