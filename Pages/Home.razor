@@ -95,7 +95,11 @@
         try
         {
             InProgress = true;
-            txtSummarizeText = await OrchestratorMethods.ReadText();
+
+            int intMaxLoops = 3;
+            int intChunkSize = 2000;
+
+            txtSummarizeText = await OrchestratorMethods.ReadText(SelectedFile, intMaxLoops, intChunkSize);
             InProgress = false;
         }
         catch (Exception ex)

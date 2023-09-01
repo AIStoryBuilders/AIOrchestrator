@@ -16,13 +16,9 @@ namespace AIOrchestrator.Model
     {
         List<ChatMessage> ChatMessages = new List<ChatMessage>();
 
-        #region public async Task<string> ReadText()
-        public async Task<string> ReadText()
+        #region public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
+        public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
         {
-            int intMaxLoops = 3;
-            int intChunkSize = 2000;
-            string Filename = "ATaleofTwoCities.txt";
-
             LogService.WriteToLog("ReadText - Start");
 
             string Organization = SettingsService.Organization;
@@ -198,23 +194,27 @@ namespace AIOrchestrator.Model
         #region private string CreateSystemMessage(string paramCurrentSummary, string paramNewText)
         private string CreateSystemMessage(string paramCurrentSummary, string paramNewText)
         {
+            // The AI should keep this under 1000 words but here we will ensure it
+            paramCurrentSummary = EnsureMaxWords(paramCurrentSummary, 1000);
+
             return "You are a program that will be repeatedly called to read a large amount of text and to produce a chronological summary.\n" +
-                    "Output a summary that combines the content in Current Summary combined with the contents in New Text.\n" +
+                    "Output a summary that combines the content in Current Summary combined with the content in New Text.\n" +
                     "In the summary only use information gathered from reading the Text.\n" +
+                    "Only respond with the new summary nothing else.\n" +
+                    "Do not allow the summary to exceed 1000 words.\n" +
                     $"###Current Summary### is: {paramCurrentSummary}\n" +
                     $"###New Text### is: {paramNewText}\n";
         }
         #endregion
 
         #region private async Task<string> ReadTextFromFile(string filename, int startWordIndex, int intChunkSize)
-        private async Task<string> ReadTextFromFile(string filename, int startWordIndex, int intChunkSize)
+        private async Task<string> ReadTextFromFile(string FileDocumentPath, int startWordIndex, int intChunkSize)
         {
             // Read the text from the file
             string TextFileRaw = "";
-            var DocumentPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\AIOrchestrator\\Documents\\{filename}";
 
             // Open the file to get existing content
-            using (var streamReader = new StreamReader(DocumentPath))
+            using (var streamReader = new StreamReader(FileDocumentPath))
             {
                 TextFileRaw = await streamReader.ReadToEndAsync();
             }
@@ -253,6 +253,23 @@ namespace AIOrchestrator.Model
 
             return ReadTextFromFileResponse;
         }
+        #endregion
+
+        #region public static string EnsureMaxWords(string paramCurrentSummary, int maxWords)
+        public static string EnsureMaxWords(string paramCurrentSummary, int maxWords)
+        {
+            // Split the string by spaces to get words
+            var words = paramCurrentSummary.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (words.Length <= maxWords)
+            {
+                // If the number of words is within the limit, return the original string
+                return paramCurrentSummary;
+            }
+
+            // If the number of words exceeds the limit, return only the first 'maxWords' words
+            return string.Join(" ", words.Take(maxWords));
+        } 
         #endregion
     }
 }
