@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json;
 using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
+using Microsoft.Maui.Storage;
 
 namespace AIOrchestrator.Model
 {
@@ -20,6 +21,7 @@ namespace AIOrchestrator.Model
         {
             int intMaxLoops = 3;
             int intChunkSize = 2000;
+            string Filename = "ATaleofTwoCities.txt";
 
             LogService.WriteToLog("ReadText - Start");
 
@@ -63,7 +65,7 @@ namespace AIOrchestrator.Model
             while (!ChatGPTCallingComplete)
             {
                 // Read Text
-                var CurrentText = await ExecuteRead(StartWordIndex, intChunkSize);
+                var CurrentText = await ExecuteRead(Filename, StartWordIndex, intChunkSize);
 
                 // *****************************************************
                 // AIOrchestratorDatabase.json
@@ -147,13 +149,13 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-        #region private async Task<string> ExecuteRead(int paramStartWordIndex, int intChunkSize)
-        private async Task<string> ExecuteRead(int paramStartWordIndex, int intChunkSize)
+        #region private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
+        private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
         {
             LogService.WriteToLog($"Read_Text - {paramStartWordIndex}");
 
             // Read the Text from the file
-            var ReadTextResult = await ReadTextFromFile(paramStartWordIndex, intChunkSize);
+            var ReadTextResult = await ReadTextFromFile(Filename, paramStartWordIndex, intChunkSize);
 
             // *****************************************************
             dynamic ReadTextFromFileObject = JsonConvert.DeserializeObject(ReadTextResult);
@@ -204,14 +206,18 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-        #region private async Task<string> ReadTextFromFile(int startWordIndex, int intChunkSize)
-        private async Task<string> ReadTextFromFile(int startWordIndex, int intChunkSize)
+        #region private async Task<string> ReadTextFromFile(string filename, int startWordIndex, int intChunkSize)
+        private async Task<string> ReadTextFromFile(string filename, int startWordIndex, int intChunkSize)
         {
             // Read the text from the file
-            using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-            using var reader = new StreamReader(stream);
+            string ATaleofTwoCitiesRaw = "";
+            var DocumentPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\AIOrchestrator\\Documents\\{filename}";
 
-            var ATaleofTwoCitiesRaw = reader.ReadToEnd();
+            // Open the file to get existing content
+            using (var streamReader = new StreamReader(DocumentPath))
+            {
+                ATaleofTwoCitiesRaw = await streamReader.ReadToEndAsync();
+            }
 
             // Split the text into words
             string[] ATaleofTwoCitiesWords = ATaleofTwoCitiesRaw.Split(

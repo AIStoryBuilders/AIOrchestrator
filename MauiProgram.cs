@@ -44,6 +44,19 @@ namespace AIOrchestrator
                 Directory.CreateDirectory(folderPath);
             }
 
+            // AIOrchestrator Documents Directory
+            var folderDocumentsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/Documents";
+            if (!Directory.Exists(folderDocumentsPath))
+            {
+                Directory.CreateDirectory(folderDocumentsPath);
+
+                // Copy ATaleofTwoCities.txt to the AIOrchestrator Documents Directory
+                using var stream = FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
+                using var reader = new StreamReader(stream.Result);
+                var text = reader.ReadToEnd();
+                File.WriteAllText(Path.Combine(folderDocumentsPath, "ATaleofTwoCities.txt"), text);
+            }
+
             // AIOrchestratorLog.csv
             filePath = Path.Combine(folderPath, "AIOrchestratorLog.csv");
 
