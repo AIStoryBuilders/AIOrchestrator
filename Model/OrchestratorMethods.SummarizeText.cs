@@ -82,7 +82,7 @@ namespace AIOrchestrator.Model
                 );
 
                 // Get a response from ChatGPT 
-                var chatRequest = new ChatRequest(
+                var FinalChatRequest = new ChatRequest(
                     chatPrompts,
                     model: "gpt-3.5-turbo-0613",
                     temperature: 0.0,
@@ -90,7 +90,7 @@ namespace AIOrchestrator.Model
                     frequencyPenalty: 0,
                     presencePenalty: 0);
 
-                ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+                ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
@@ -130,6 +130,31 @@ namespace AIOrchestrator.Model
                     LogService.WriteToLog($"CallCount - {CallCount}");
                 }
             }
+
+            // *****************************************************
+            // Clean up the final summary
+            // Remove the System Message
+            string RawSummary = ChatResponseResult.FirstChoice.Message.Content;
+
+            chatPrompts = new List<Message>();
+
+            chatPrompts.Insert(0,
+            new Message(
+                Role.System,
+                $"Format the following summary to break it up into paragraphs: {RawSummary}"
+                )
+            );
+
+            // Get a response from ChatGPT 
+            var chatRequest = new ChatRequest(
+                chatPrompts,
+                model: "gpt-3.5-turbo-0613",
+                temperature: 0.0,
+                topP: 1,
+                frequencyPenalty: 0,
+                presencePenalty: 0);
+
+            ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             // Create a new Message object with the response and other details
             // and add it to the messages list
@@ -269,7 +294,7 @@ namespace AIOrchestrator.Model
 
             // If the number of words exceeds the limit, return only the first 'maxWords' words
             return string.Join(" ", words.Take(maxWords));
-        } 
+        }
         #endregion
     }
 }
