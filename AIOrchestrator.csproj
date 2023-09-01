@@ -50,7 +50,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Resources\Raw\ATaleofTwoCities.txt" />
+      <None Remove="Resources\Raw\A Tale of Two Cities.txt" />
     </ItemGroup>
 
     <ItemGroup>

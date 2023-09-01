@@ -26,19 +26,10 @@
     <Logs></Logs>
 }
 @code {
-    private string ATaleofTwoCitiesRaw = "";
     bool HomeVisible = true;
     bool SettingsVisible = false;
     bool MemoryVisible = false;
     bool LogsVisible = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-        using var reader = new StreamReader(stream);
-
-        ATaleofTwoCitiesRaw = reader.ReadToEnd();
-    }
 
     void OnHomeClicked(MenuItemEventArgs args)
     {

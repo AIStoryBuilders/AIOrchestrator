@@ -19,8 +19,8 @@ namespace AIOrchestrator
             builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
-		builder.Services.AddBlazorWebViewDeveloperTools();
-		builder.Logging.AddDebug();
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
 
             builder.Services.AddSingleton<LogService>();
@@ -50,11 +50,21 @@ namespace AIOrchestrator
             {
                 Directory.CreateDirectory(folderDocumentsPath);
 
-                // Copy ATaleofTwoCities.txt to the AIOrchestrator Documents Directory
-                using var stream = FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-                using var reader = new StreamReader(stream.Result);
-                var text = reader.ReadToEnd();
-                File.WriteAllText(Path.Combine(folderDocumentsPath, "ATaleofTwoCities.txt"), text);
+                // Copy all files Assets to the AIOrchestrator Documents Directory
+                List<string> files = new List<string>
+                {
+                    "A Room with a View.txt",
+                    "A Tale of Two Cities.txt",
+                    "The Great Gatsby.txt"
+                };
+
+                foreach (var file in files)
+                {
+                    using var stream = FileSystem.OpenAppPackageFileAsync(file);
+                    using var reader = new StreamReader(stream.Result);
+                    var text = reader.ReadToEnd();
+                    File.WriteAllText(Path.Combine(folderDocumentsPath, file), text);
+                }
             }
 
             // AIOrchestratorLog.csv
@@ -85,7 +95,7 @@ namespace AIOrchestrator
 
                 // Append the text to csv file
                 using (var streamWriter = new StreamWriter(filePath))
-                {                                        
+                {
                     streamWriter.WriteLine(string.Join("\n", "Application started at " + DateTime.Now));
                     streamWriter.WriteLine(string.Join("\n", AIOrchestratorLog));
                 }

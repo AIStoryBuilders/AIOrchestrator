@@ -210,25 +210,23 @@ namespace AIOrchestrator.Model
         private async Task<string> ReadTextFromFile(string filename, int startWordIndex, int intChunkSize)
         {
             // Read the text from the file
-            string ATaleofTwoCitiesRaw = "";
+            string TextFileRaw = "";
             var DocumentPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\AIOrchestrator\\Documents\\{filename}";
 
             // Open the file to get existing content
             using (var streamReader = new StreamReader(DocumentPath))
             {
-                ATaleofTwoCitiesRaw = await streamReader.ReadToEndAsync();
+                TextFileRaw = await streamReader.ReadToEndAsync();
             }
 
             // Split the text into words
-            string[] ATaleofTwoCitiesWords = ATaleofTwoCitiesRaw.Split(
-                               new char[] { ' ', '\t', '\n', '\r' },
-                                              StringSplitOptions.RemoveEmptyEntries);
+            string[] TextFileWords = TextFileRaw.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Get the total number of words
-            int TotalWords = ATaleofTwoCitiesWords.Length;
+            int TotalWords = TextFileWords.Length;
 
             // Get words starting at the startWordIndex
-            string[] ATaleofTwoCitiesWordsChunk = ATaleofTwoCitiesWords.Skip(startWordIndex).Take(intChunkSize).ToArray();
+            string[] TextFileWordsChunk = TextFileWords.Skip(startWordIndex).Take(intChunkSize).ToArray();
 
             // Set the current word to the startWordIndex + intChunkSize
             int CurrentWord = startWordIndex + intChunkSize;
@@ -241,13 +239,13 @@ namespace AIOrchestrator.Model
 
             string ReadTextFromFileResponse = """
                         {
-                         "Text": "{ATaleofTwoCitiesWordsChunk}",
+                         "Text": "{TextFileWordsChunk}",
                          "CurrentWord": {CurrentWord},
                          "TotalWords": {TotalWords},
                         }
                         """;
 
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{ATaleofTwoCitiesWordsChunk}", string.Join(" ", ATaleofTwoCitiesWordsChunk));
+            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TextFileWordsChunk}", string.Join(" ", TextFileWordsChunk));
             ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{CurrentWord}", CurrentWord.ToString());
             ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
 

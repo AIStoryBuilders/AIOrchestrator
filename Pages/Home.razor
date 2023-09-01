@@ -8,10 +8,17 @@
 <h3>Home</h3>
 @if (@InProgress)
 {
-    <div class="rz-m-12">
+    <div class="rz-m-10">
         <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
     </div>
 }
+<!-- Dropdown showing files in the Documents directory -->
+<div class="row">
+    <div class="col">
+        <RadzenLabel><b>Select File:</b></RadzenLabel><RadzenDropDown @bind-Value=@SelectedFile Data=@DocumentFiles TextProperty="Name" ValueProperty="FullName" Style="width: 300px" />
+    </div>
+</div>
+<br />
 <RadzenTabs TabPosition=TabPosition.Top RenderMode="TabRenderMode.Client">
     <Tabs>
         <RadzenTabsItem Text="Text">
@@ -22,7 +29,7 @@
                                   Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
                 </div>
             </div>
-            <RadzenTextArea @bind-Value=@ATaleofTwoCitiesRaw Cols="70" Rows="10" />
+            <RadzenTextArea @bind-Value=@TextFileRaw Cols="70" Rows="10" />
         </RadzenTabsItem>
         <RadzenTabsItem Text="SummarizeText">
             <div class="row">
@@ -37,19 +44,38 @@
     </Tabs>
 </RadzenTabs>
 @code {
-    private string ATaleofTwoCitiesRaw = "";
+    private string TextFileRaw = "";
     private string txtSummarizeText = "";
     bool InProgress = false;
+
+    List<System.IO.FileInfo> DocumentFiles = new List<System.IO.FileInfo>();
+    string SelectedFile { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // Get the list of files in the Documents directory
+        var DocumentPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\AIOrchestrator\\Documents";
+        var dir = new DirectoryInfo(DocumentPath);
+        DocumentFiles = dir.GetFiles().ToList();
+
+        if (DocumentFiles.Count > 0)
+        {
+            SelectedFile = DocumentFiles[0].FullName;
+        }
+    }
 
     private async Task LoadText()
     {
         try
         {
             InProgress = true;
-            using var stream = await FileSystem.OpenAppPackageFileAsync("ATaleofTwoCities.txt");
-            using var reader = new StreamReader(stream);
 
-            ATaleofTwoCitiesRaw = reader.ReadToEnd();
+            // Open the file to get existing content
+            using (var streamReader = new StreamReader(SelectedFile))
+            {
+                TextFileRaw = await streamReader.ReadToEndAsync();
+            }
+
             InProgress = false;
         }
         catch (Exception ex)
@@ -83,5 +109,4 @@
                 });
         }
     }
-
 }
