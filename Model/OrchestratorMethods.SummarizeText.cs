@@ -12,8 +12,19 @@ using Microsoft.Maui.Storage;
 
 namespace AIOrchestrator.Model
 {
+    public class ReadTextEventArgs : EventArgs
+    {
+        public string Message { get; set; }
+
+        public ReadTextEventArgs(string message)
+        {
+            Message = message;
+        }
+    }
     public partial class OrchestratorMethods
     {
+        public event EventHandler<ReadTextEventArgs> ReadTextEvent;
+
         List<ChatMessage> ChatMessages = new List<ChatMessage>();
 
         #region public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
@@ -94,7 +105,7 @@ namespace AIOrchestrator.Model
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
-                LogService.WriteToLog($"TotalTokens - {TotalTokens}");
+                LogService.WriteToLog($"TotalTokens: {TotalTokens}");
 
                 if (Databasefile.CurrentTask == "Read Text")
                 {
@@ -120,20 +131,27 @@ namespace AIOrchestrator.Model
                     {
                         // Break out of the loop
                         ChatGPTCallingComplete = true;
-                        LogService.WriteToLog($"* Breaking out of loop * CallCount - {CallCount}");
+                        LogService.WriteToLog($"* Breaking out of loop * Iteration: {CallCount}");
+                        ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Break out of the loop - Iteration: {CallCount}"));
+                    }
+                    else
+                    {
+                        ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Continue to Loop - Iteration: {CallCount}"));
                     }
                 }
                 else
                 {
                     // Break out of the loop
                     ChatGPTCallingComplete = true;
-                    LogService.WriteToLog($"CallCount - {CallCount}");
+                    LogService.WriteToLog($"Iteration: {CallCount}");
+                    ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Break out of the loop - Iteration: {CallCount}"));
                 }
             }
 
             // *****************************************************
             // Clean up the final summary
             // Remove the System Message
+            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Clean up the final summary"));
             string RawSummary = ChatResponseResult.FirstChoice.Message.Content;
 
             chatPrompts = new List<Message>();

@@ -5,6 +5,7 @@
 @inject DialogService DialogService
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
+@implements IDisposable
 <h3>Home</h3>
 @if (@InProgress)
 {
@@ -68,6 +69,8 @@
         {
             SelectedFile = DocumentFiles[0].FullName;
         }
+
+        OrchestratorMethods.ReadTextEvent += OrchestratorMethods_ReadTextEvent;
     }
 
     private async Task LoadText()
@@ -118,6 +121,25 @@
                 });
         }
     }
+
+    private void OrchestratorMethods_ReadTextEvent(object sender, EventArgs e)
+    {
+        ReadTextEventArgs ReadTextEventArguments = (ReadTextEventArgs)e;
+
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Info",
+                Detail = ReadTextEventArguments.Message,
+                Duration = 4000
+            });
+    }
+
+    public void Dispose()
+    {
+        OrchestratorMethods.ReadTextEvent -= OrchestratorMethods_ReadTextEvent;
+    }
+
 
     // Utility
 
