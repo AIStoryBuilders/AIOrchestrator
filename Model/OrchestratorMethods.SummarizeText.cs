@@ -43,7 +43,7 @@ namespace AIOrchestrator.Model
             // Store Tasks in the Database as an array in a single property
             // Store the Last Read Index as a Property in Database
             // Store Summary as a Property in the Database
-            dynamic AIOrchestratorSettingsObject = new
+            dynamic AIOrchestratorDatabaseObject = new
             {
                 CurrentTask = "Read Text",
                 LastWordRead = 0,
@@ -52,7 +52,7 @@ namespace AIOrchestrator.Model
 
             // Save AIOrchestratorDatabase.json
             AIOrchestratorDatabase objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-            objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
+            objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
             // Create a new OpenAIClient object
             // with the provided API key and organization
@@ -105,7 +105,8 @@ namespace AIOrchestrator.Model
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
-                LogService.WriteToLog($"TotalTokens: {TotalTokens}");
+
+                LogService.WriteToLog($"Iteration: {CallCount} - TotalTokens: {TotalTokens} - result.FirstChoice.Message - {ChatResponseResult.FirstChoice.Message}");
 
                 if (Databasefile.CurrentTask == "Read Text")
                 {
@@ -115,7 +116,7 @@ namespace AIOrchestrator.Model
                     StartWordIndex = Databasefile.LastWordRead;
 
                     // Update the AIOrchestratorDatabase.json file
-                    AIOrchestratorSettingsObject = new
+                    AIOrchestratorDatabaseObject = new
                     {
                         CurrentTask = "Read Text",
                         LastWordRead = Databasefile.LastWordRead,
@@ -124,7 +125,7 @@ namespace AIOrchestrator.Model
 
                     // Save AIOrchestratorDatabase.json
                     objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                    objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
+                    objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
                     // Check if we have exceeded the maximum number of calls
                     if (CallCount > intMaxLoops)
@@ -191,8 +192,6 @@ namespace AIOrchestrator.Model
         #region private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
         private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
         {
-            LogService.WriteToLog($"Read_Text - {paramStartWordIndex}");
-
             // Read the Text from the file
             var ReadTextResult = await ReadTextFromFile(Filename, paramStartWordIndex, intChunkSize);
 
@@ -218,7 +217,7 @@ namespace AIOrchestrator.Model
             }
 
             // Prepare object to save to AIOrchestratorDatabase.json
-            dynamic AIOrchestratorSettingsObject = new
+            dynamic AIOrchestratorDatabaseObject = new
             {
                 CurrentTask = strCurrentTask,
                 LastWordRead = intLastWordRead,
@@ -226,7 +225,7 @@ namespace AIOrchestrator.Model
             };
 
             // Update the AIOrchestratorDatabase.json file
-            objAIOrchestratorDatabase.WriteFile(AIOrchestratorSettingsObject);
+            objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
             return ReadTextFromFileText;
         }
@@ -292,8 +291,6 @@ namespace AIOrchestrator.Model
             ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{CurrentWord}", CurrentWord.ToString());
             ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
 
-            LogService.WriteToLog($"ReadTextFromFileResponse - {ReadTextFromFileResponse}");
-
             return ReadTextFromFileResponse;
         }
         #endregion
@@ -310,8 +307,8 @@ namespace AIOrchestrator.Model
                 return paramCurrentSummary;
             }
 
-            // If the number of words exceeds the limit, return only the first 'maxWords' words
-            return string.Join(" ", words.Take(maxWords));
+            // If the number of words exceeds the limit, return only the last 'maxWords' words
+            return string.Join(" ", words.Reverse().Take(maxWords).Reverse());
         }
         #endregion
     }

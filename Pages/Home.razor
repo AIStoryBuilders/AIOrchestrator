@@ -4,6 +4,7 @@
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject SettingsService SettingsService
+@inject LogService LogService
 @inject OrchestratorMethods OrchestratorMethods
 @implements IDisposable
 <h3>Home</h3>
@@ -89,6 +90,8 @@
         }
         catch (Exception ex)
         {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Error,
@@ -112,6 +115,8 @@
         }
         catch (Exception ex)
         {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Error,

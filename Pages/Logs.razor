@@ -9,12 +9,14 @@
     </div>
 </div>
 <RadzenDataGrid AllowFiltering="false" AllowColumnResize="true" AllowAlternatingRows="true"
-                PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
+                PageSize="3" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left"
                 Data="@AIOrchestratorLog" TItem="string" ColumnWidth="300px" ShowPagingSummary="true">
     <Columns>
         <RadzenDataGridColumn TItem="string" Title="Entry">
             <Template>
-                @context
+                <div style="height: 100px; overflow-y: auto; white-space: normal;">
+                    @context
+                </div>
             </Template>
         </RadzenDataGridColumn>
     </Columns>
