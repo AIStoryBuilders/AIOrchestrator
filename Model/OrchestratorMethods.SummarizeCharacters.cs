@@ -9,6 +9,7 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
 using Microsoft.Maui.Storage;
+using static AIOrchestrator.Pages.Memory;
 
 namespace AIOrchestrator.Model
 {
@@ -88,8 +89,25 @@ namespace AIOrchestrator.Model
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
+                var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
+                string[] NamedCharactersFoundArray = NamedCharactersFound.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                // *******************************************************
+                // Create a Vector database entry for each named Character found
+                foreach (string NamedCharcter in NamedCharactersFoundArray)
+                {
+                    // Create a Vector database entry for each named Character found
+                    if (NamedCharcter != "")
+                    {
+                        // Create a Vector database entry for each named Character found
+                        await CreateVectorEntry(NamedCharcter, $"Character information {DateTime.Now.Ticks.ToString()}");
+                    }
+                }
+
+
+                // *******************************************************
                 // Update the Summary
-                Summary = CombineAndSortLists(Summary,ChatResponseResult.FirstChoice.Message.Content);
+                Summary = CombineAndSortLists(Summary, NamedCharactersFound);
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
@@ -263,5 +281,39 @@ namespace AIOrchestrator.Model
             return ReadTextFromFileResponse;
         }
         #endregion
+
+        private async Task CreateVectorEntry(string namedCharacter, string memoryContent)
+        {
+            var VectorContent = namedCharacter + ":" + memoryContent;
+
+            // **** Call OpenAI and get embeddings for the memory text
+            // Create an instance of the OpenAI client
+            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
+            // Get the model details
+            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+            // Get embeddings for the text
+            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(VectorContent, model);
+            // Get embeddings as an array of floats
+            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+            // Loop through the embeddings
+            List<VectorData> AllVectors = new List<VectorData>();
+            for (int i = 0; i < EmbeddingVectors.Length; i++)
+            {
+                var embeddingVector = new VectorData
+                {
+                    VectorValue = EmbeddingVectors[i]
+                };
+                AllVectors.Add(embeddingVector);
+            }
+            // Convert the floats to a single string
+            var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
+            // Write the memory to the .csv file
+            var AIOrchestratorMemoryPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
+            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
+            {
+                streamWriter.WriteLine(VectorContent + "|" + VectorsToSave);
+            }
+        }
     }
 }
