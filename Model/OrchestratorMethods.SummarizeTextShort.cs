@@ -12,27 +12,12 @@ using Microsoft.Maui.Storage;
 
 namespace AIOrchestrator.Model
 {
-    public class ReadTextEventArgs : EventArgs
-    {
-        public string Message { get; set; }
-
-        public ReadTextEventArgs(string message)
-        {
-            Message = message;
-        }
-    }
     public partial class OrchestratorMethods
     {
-        public event EventHandler<ReadTextEventArgs> ReadTextEvent;
-
-        dynamic AIOrchestratorDatabaseObject { get; set; }
-
-        List<ChatMessage> ChatMessages = new List<ChatMessage>();
-
-        #region public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<string> ReadTextShort(string Filename, int intMaxLoops, int intChunkSize)
+        public async Task<string> ReadTextShort(string Filename, int intMaxLoops, int intChunkSize)
         {
-            LogService.WriteToLog("ReadText - Start");
+            LogService.WriteToLog("ReadTextShort - Start");
 
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
@@ -234,8 +219,8 @@ namespace AIOrchestrator.Model
             paramCurrentSummary = EnsureMaxWords(paramCurrentSummary, 1000);
 
             return "You are a program that will produce a ###New Summary### not to exceed 1000 words. \n" +
-                    "Output a ###New Summary### that combines the content in ###Current Summary### combined with the content in ###New Text###. \n" +
-                    "In the ###New Summary### only use information from ###Current Summary### and ###New Text###. \n" +
+                    "Output ###New Summary### that combines the contents of ###Current Summary### with the additional content in ###New Text###. \n" +
+                    "In ###New Summary### only use content from ###Current Summary### and ###New Text###. \n" +
                     "Only respond with the contents of ###New Summary### nothing else. \n" +
                     "Do not allow the ###New Summary### to exceed 1000 words. \n" +
                     $"###Current Summary### is: {paramCurrentSummary}\n" +

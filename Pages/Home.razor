@@ -1,6 +1,7 @@
 ﻿@using AIOrchestrator.Model;
 @using Newtonsoft.Json;
 @using OpenAI;
+@using static AIOrchestrator.Model.OrchestratorMethods;
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject SettingsService SettingsService
@@ -33,24 +34,38 @@
             </div>
             <RadzenTextArea @bind-Value=@TextFileRaw Cols="70" Rows="10" />
         </RadzenTabsItem>
-        <RadzenTabsItem Text="SummarizeText">
+        <RadzenTabsItem Text="Summarize Text (Short)">
             <div class="row">
                 <div class="col">
                     <RadzenButton Text="Summarize Text" ButtonStyle="ButtonStyle.Info"
-                                  Click="SummarizeText"
+                                  Click="SummarizeTextShort"
                                   Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
                     <RadzenLabel><b>Chunk Size (words):</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intChunkSize style="width:75px" />
                     &nbsp;&nbsp
                     <RadzenLabel><b>Max Iterations:</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intMaxLoops style="width:75px" />
                 </div>
             </div>
-            <RadzenTextArea @bind-Value=@txtSummarizeText Cols="70" Rows="10" />
+            <RadzenTextArea @bind-Value=@txtSummarizeTextShort Cols="70" Rows="10" />
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Summarize Text (Long)">
+            <div class="row">
+                <div class="col">
+                    <RadzenButton Text="Summarize Text" ButtonStyle="ButtonStyle.Info"
+                                  Click="SummarizeTextLong"
+                                  Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+                    <RadzenLabel><b>Chunk Size (words):</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intChunkSize style="width:75px" />
+                    &nbsp;&nbsp
+                    <RadzenLabel><b>Max Iterations:</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intMaxLoops style="width:75px" />
+                </div>
+            </div>
+            <RadzenTextArea @bind-Value=@txtSummarizeTextLong Cols="70" Rows="10" />
         </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
 @code {
     private string TextFileRaw = "";
-    private string txtSummarizeText = "";
+    private string txtSummarizeTextShort = "";
+    private string txtSummarizeTextLong = "";
     bool InProgress = false;
 
     List<System.IO.FileInfo> DocumentFiles = new List<System.IO.FileInfo>();
@@ -102,7 +117,7 @@
         }
     }
 
-    private async Task SummarizeText()
+    private async Task SummarizeTextShort()
     {
         try
         {
@@ -110,7 +125,32 @@
 
             ClearLog();
 
-            txtSummarizeText = await OrchestratorMethods.ReadText(SelectedFile, intMaxLoops, intChunkSize);
+            txtSummarizeTextShort = await OrchestratorMethods.ReadTextShort(SelectedFile, intMaxLoops, intChunkSize);
+            InProgress = false;
+        }
+        catch (Exception ex)
+        {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private async Task SummarizeTextLong()
+    {
+        try
+        {
+            InProgress = true;
+
+            ClearLog();
+
+            txtSummarizeTextLong = await OrchestratorMethods.ReadTextLong(SelectedFile, intMaxLoops, intChunkSize);
             InProgress = false;
         }
         catch (Exception ex)
