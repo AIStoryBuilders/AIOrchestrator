@@ -132,7 +132,6 @@ namespace AIOrchestrator.Model
 
             // *****************************************************
             // Clean up the final summary
-            // Remove the System Message
             ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Clean up the final summary"));
             string RawSummary = ChatResponseResult.FirstChoice.Message.Content;
 
@@ -155,15 +154,6 @@ namespace AIOrchestrator.Model
                 presencePenalty: 0);
 
             ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
-
-            // Create a new Message object with the response and other details
-            // and add it to the messages list
-            ChatMessages.Add(new ChatMessage
-            {
-                Prompt = ChatResponseResult.FirstChoice.Message,
-                Role = Role.Assistant,
-                Tokens = ChatResponseResult.Usage.CompletionTokens ?? 0
-            });
 
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
@@ -218,11 +208,12 @@ namespace AIOrchestrator.Model
             // The AI should keep this under 1000 words but here we will ensure it
             paramCurrentSummary = EnsureMaxWords(paramCurrentSummary, 1000);
 
-            return "You are a program that will produce a ###New Summary### not to exceed 1000 words. \n" +
-                    "Output ###New Summary### that combines the contents of ###Current Summary### with the additional content in ###New Text###. \n" +
-                    "In ###New Summary### only use content from ###Current Summary### and ###New Text###. \n" +
-                    "Only respond with the contents of ###New Summary### nothing else. \n" +
-                    "Do not allow the ###New Summary### to exceed 1000 words. \n" +
+            return "You are a program that will produce a summary not to exceed 1000 words. \n" +
+                    "Only respond with the contents of the summary nothing else. \n" +
+                    "Output a summary that combines the contents of ###Current Summary### with the additional content in ###New Text###. \n" +
+                    "In the summary only use content from ###Current Summary### and ###New Text###. \n" +
+                    "Only respond with the contents of the summary nothing else. \n" +
+                    "Do not allow the summary to exceed 1000 words. \n" +
                     $"###Current Summary### is: {paramCurrentSummary}\n" +
                     $"###New Text### is: {paramNewText}\n";
         }

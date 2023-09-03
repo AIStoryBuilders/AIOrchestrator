@@ -64,10 +64,9 @@ namespace AIOrchestrator.Model
 
                 // *****************************************************
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
-                string CurrentSummary = AIOrchestratorDatabaseObject.Summary ?? "";
 
                 // Update System Message
-                SystemMessage = CreateSystemMessageLong(CurrentSummary, CurrentText);
+                SystemMessage = CreateSystemMessageLong(CurrentText);
 
                 chatPrompts = new List<Message>();
 
@@ -89,6 +88,9 @@ namespace AIOrchestrator.Model
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
+                // Update the Summary
+                Summary = Summary + ChatResponseResult.FirstChoice.Message.Content + "\n\n";
+
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
 
@@ -100,9 +102,6 @@ namespace AIOrchestrator.Model
                     ChatGPTCallingComplete = false;
                     CallCount = CallCount + 1;
                     StartWordIndex = Databasefile.LastWordRead;
-
-                    // Update the Summary
-                    Summary = Summary + " " + ChatResponseResult.FirstChoice.Message.Content;
 
                     // Update the AIOrchestratorDatabase.json file
                     AIOrchestratorDatabaseObject = new
@@ -135,44 +134,13 @@ namespace AIOrchestrator.Model
             }
 
             // *****************************************************
-            // Clean up the final summary
-            // Remove the System Message
-            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Clean up the final summary"));
-
-            chatPrompts = new List<Message>();
-
-            chatPrompts.Insert(0,
-            new Message(
-                Role.System,
-                $"Format the following summary to break it up into paragraphs: {Summary}"
-                )
-            );
-
-            // Get a response from ChatGPT 
-            var chatRequest = new ChatRequest(
-                chatPrompts,
-                model: "gpt-3.5-turbo-0613",
-                temperature: 0.0,
-                topP: 1,
-                frequencyPenalty: 0,
-                presencePenalty: 0);
-
-            ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
-
-            // Create a new Message object with the response and other details
-            // and add it to the messages list
-            ChatMessages.Add(new ChatMessage
-            {
-                Prompt = ChatResponseResult.FirstChoice.Message,
-                Role = Role.Assistant,
-                Tokens = ChatResponseResult.Usage.CompletionTokens ?? 0
-            });
-
+            // Output final summary
+            
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"result.FirstChoice.Message - {ChatResponseResult.FirstChoice.Message}");
-            return ChatResponseResult.FirstChoice.Message;
+            LogService.WriteToLog($"Summary - {Summary}");
+            return Summary;
         }
         #endregion
 
@@ -215,16 +183,13 @@ namespace AIOrchestrator.Model
 
         // Methods
 
-        #region private string CreateSystemMessageLong(string paramCurrentSummary, string paramNewText)
-        private string CreateSystemMessageLong(string paramCurrentSummary, string paramNewText)
+        #region private string CreateSystemMessageLong(string paramNewText)
+        private string CreateSystemMessageLong(string paramNewText)
         {
-            // The AI should keep this under 1000 words but here we will ensure it
-            paramCurrentSummary = EnsureMaxWordsLong(paramCurrentSummary, 1000);
-
-            return "You are a program that will produce a ###Summary### not to exceed 100 words. \n" +
-                    "Output a ###Summary### that summarizes the content in ###New Text###. \n" +
-                    "Only respond with the contents of ###Summary### nothing else. \n" +
-                    "Do not allow the ###Summary### to exceed 1000 words. \n" +
+            return "You are a program that will produce a summary of the content of ###New Text###.\n" +
+                    "Only respond with the contents of the summary nothing else.\n" +
+                    "Always output complete sentances.\n" +
+                    "Only respond with the contents of the summary nothing else.\n" +
                     $"###New Text### is: {paramNewText}\n";
         }
         #endregion
@@ -275,21 +240,5 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-        #region public static string EnsureMaxWordsLong(string paramCurrentSummary, int maxWords)
-        public static string EnsureMaxWordsLong(string paramCurrentSummary, int maxWords)
-        {
-            // Split the string by spaces to get words
-            var words = paramCurrentSummary.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (words.Length <= maxWords)
-            {
-                // If the number of words is within the limit, return the original string
-                return paramCurrentSummary;
-            }
-
-            // If the number of words exceeds the limit, return only the last 'maxWords' words
-            return string.Join(" ", words.Reverse().Take(maxWords).Reverse());
-        }
-        #endregion
     }
 }
