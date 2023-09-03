@@ -25,6 +25,8 @@ namespace AIOrchestrator.Model
     {
         public event EventHandler<ReadTextEventArgs> ReadTextEvent;
 
+        dynamic AIOrchestratorDatabaseObject { get; set; }
+
         List<ChatMessage> ChatMessages = new List<ChatMessage>();
 
         #region public async Task<string> ReadText(string Filename, int intMaxLoops, int intChunkSize)
@@ -43,7 +45,7 @@ namespace AIOrchestrator.Model
             // Store Tasks in the Database as an array in a single property
             // Store the Last Read Index as a Property in Database
             // Store Summary as a Property in the Database
-            dynamic AIOrchestratorDatabaseObject = new
+            AIOrchestratorDatabaseObject = new
             {
                 CurrentTask = "Read Text",
                 LastWordRead = 0,
@@ -75,10 +77,8 @@ namespace AIOrchestrator.Model
                 var CurrentText = await ExecuteRead(Filename, StartWordIndex, intChunkSize);
 
                 // *****************************************************
-                // AIOrchestratorDatabase.json
-                objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                dynamic Databasefile = objAIOrchestratorDatabase.ReadFileDynamic();
-                string CurrentSummary = Databasefile.Summary ?? "";
+                dynamic Databasefile = AIOrchestratorDatabaseObject;
+                string CurrentSummary = AIOrchestratorDatabaseObject.Summary ?? "";
 
                 // Update System Message
                 SystemMessage = CreateSystemMessage(CurrentSummary, CurrentText);
@@ -122,10 +122,6 @@ namespace AIOrchestrator.Model
                         LastWordRead = Databasefile.LastWordRead,
                         Summary = ChatResponseResult.FirstChoice.Message.Content
                     };
-
-                    // Save AIOrchestratorDatabase.json
-                    objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-                    objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
                     // Check if we have exceeded the maximum number of calls
                     if (CallCount > intMaxLoops)
@@ -184,6 +180,9 @@ namespace AIOrchestrator.Model
                 Tokens = ChatResponseResult.Usage.CompletionTokens ?? 0
             });
 
+            // Save AIOrchestratorDatabase.json
+            objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
+
             LogService.WriteToLog($"result.FirstChoice.Message - {ChatResponseResult.FirstChoice.Message}");
             return ChatResponseResult.FirstChoice.Message;
         }
@@ -202,9 +201,7 @@ namespace AIOrchestrator.Model
             int intTotalWords = ReadTextFromFileObject.TotalWords;
 
             // *****************************************************
-            // AIOrchestratorDatabase.json
-            var objAIOrchestratorDatabase = new AIOrchestratorDatabase();
-            dynamic Databasefile = objAIOrchestratorDatabase.ReadFileDynamic();
+            dynamic Databasefile = AIOrchestratorDatabaseObject;
 
             string strCurrentTask = Databasefile.CurrentTask;
             int intLastWordRead = intCurrentWord;
@@ -217,15 +214,12 @@ namespace AIOrchestrator.Model
             }
 
             // Prepare object to save to AIOrchestratorDatabase.json
-            dynamic AIOrchestratorDatabaseObject = new
+            AIOrchestratorDatabaseObject = new
             {
                 CurrentTask = strCurrentTask,
                 LastWordRead = intLastWordRead,
                 Summary = strSummary
             };
-
-            // Update the AIOrchestratorDatabase.json file
-            objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
             return ReadTextFromFileText;
         }
@@ -239,11 +233,11 @@ namespace AIOrchestrator.Model
             // The AI should keep this under 1000 words but here we will ensure it
             paramCurrentSummary = EnsureMaxWords(paramCurrentSummary, 1000);
 
-            return "You are a program that will be repeatedly called to read a large amount of text and to produce a chronological summary.\n" +
-                    "Output a summary that combines the content in Current Summary combined with the content in New Text.\n" +
-                    "In the summary only use information gathered from reading the Text.\n" +
-                    "Only respond with the new summary nothing else.\n" +
-                    "Do not allow the summary to exceed 1000 words.\n" +
+            return "You are a program that will produce a ###New Summary### not to exceed 1000 words. \n" +
+                    "Output a ###New Summary### that combines the content in ###Current Summary### combined with the content in ###New Text###. \n" +
+                    "In the ###New Summary### only use information from ###Current Summary### and ###New Text###. \n" +
+                    "Only respond with the contents of ###New Summary### nothing else. \n" +
+                    "Do not allow the ###New Summary### to exceed 1000 words. \n" +
                     $"###Current Summary### is: {paramCurrentSummary}\n" +
                     $"###New Text### is: {paramNewText}\n";
         }
