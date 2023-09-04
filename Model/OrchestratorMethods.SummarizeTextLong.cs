@@ -60,7 +60,7 @@ namespace AIOrchestrator.Model
             while (!ChatGPTCallingComplete)
             {
                 // Read Text
-                var CurrentText = await ExecuteReadLong(Filename, StartWordIndex, intChunkSize);
+                var CurrentText = await ExecuteRead(Filename, StartWordIndex, intChunkSize);
 
                 // *****************************************************
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
@@ -144,43 +144,6 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-        #region private async Task<string> ExecuteReadLong(string Filename, int paramStartWordIndex, int intChunkSize)
-        private async Task<string> ExecuteReadLong(string Filename, int paramStartWordIndex, int intChunkSize)
-        {
-            // Read the Text from the file
-            var ReadTextResult = await ReadTextFromFileLong(Filename, paramStartWordIndex, intChunkSize);
-
-            // *****************************************************
-            dynamic ReadTextFromFileObject = JsonConvert.DeserializeObject(ReadTextResult);
-            string ReadTextFromFileText = ReadTextFromFileObject.Text;
-            int intCurrentWord = ReadTextFromFileObject.CurrentWord;
-            int intTotalWords = ReadTextFromFileObject.TotalWords;
-
-            // *****************************************************
-            dynamic Databasefile = AIOrchestratorDatabaseObject;
-
-            string strCurrentTask = Databasefile.CurrentTask;
-            int intLastWordRead = intCurrentWord;
-            string strSummary = Databasefile.Summary ?? "";
-
-            // If we are done reading the text, then summarize it
-            if (intCurrentWord >= intTotalWords)
-            {
-                strCurrentTask = "Summarize Text";
-            }
-
-            // Prepare object to save to AIOrchestratorDatabase.json
-            AIOrchestratorDatabaseObject = new
-            {
-                CurrentTask = strCurrentTask,
-                LastWordRead = intLastWordRead,
-                Summary = strSummary
-            };
-
-            return ReadTextFromFileText;
-        }
-        #endregion
-
         // Methods
 
         #region private string CreateSystemMessageLong(string paramNewText)
@@ -191,52 +154,6 @@ namespace AIOrchestrator.Model
                     "Always output complete sentances.\n" +
                     "Only respond with the contents of the summary nothing else.\n" +
                     $"###New Text### is: {paramNewText}\n";
-        }
-        #endregion
-
-        #region private async Task<string> ReadTextFromFileLong(string filename, int startWordIndex, int intChunkSize)
-        private async Task<string> ReadTextFromFileLong(string FileDocumentPath, int startWordIndex, int intChunkSize)
-        {
-            // Read the text from the file
-            string TextFileRaw = "";
-
-            // Open the file to get existing content
-            using (var streamReader = new StreamReader(FileDocumentPath))
-            {
-                TextFileRaw = await streamReader.ReadToEndAsync();
-            }
-
-            // Split the text into words
-            string[] TextFileWords = TextFileRaw.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Get the total number of words
-            int TotalWords = TextFileWords.Length;
-
-            // Get words starting at the startWordIndex
-            string[] TextFileWordsChunk = TextFileWords.Skip(startWordIndex).Take(intChunkSize).ToArray();
-
-            // Set the current word to the startWordIndex + intChunkSize
-            int CurrentWord = startWordIndex + intChunkSize;
-
-            if (CurrentWord >= TotalWords)
-            {
-                // Set the current word to the total words
-                CurrentWord = TotalWords;
-            }
-
-            string ReadTextFromFileResponse = """
-                        {
-                         "Text": "{TextFileWordsChunk}",
-                         "CurrentWord": {CurrentWord},
-                         "TotalWords": {TotalWords},
-                        }
-                        """;
-
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TextFileWordsChunk}", string.Join(" ", TextFileWordsChunk));
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{CurrentWord}", CurrentWord.ToString());
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
-
-            return ReadTextFromFileResponse;
         }
         #endregion
 

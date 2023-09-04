@@ -9,16 +9,18 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
 using Microsoft.Maui.Storage;
+using static AIOrchestrator.Pages.Memory;
 
 namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> ReadTextShort(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> ReadTextShort(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<string> SummarizeCharacter(string Filename, string paramSelectedCharacter, int intMaxLoops, int intChunkSize)
+        public async Task<string> SummarizeCharacter(string Filename, string paramSelectedCharacter, int intMaxLoops, int intChunkSize)
         {
-            LogService.WriteToLog("ReadTextShort - Start");
+            LogService.WriteToLog("SummarizeCharacter - Start");
 
+            string Summary = "";
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -63,10 +65,9 @@ namespace AIOrchestrator.Model
 
                 // *****************************************************
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
-                string CurrentSummary = AIOrchestratorDatabaseObject.Summary ?? "";
 
                 // Update System Message
-                SystemMessage = CreateSystemMessage(CurrentSummary, CurrentText);
+                SystemMessage = CreateSystemMessageCharacterSummary(CurrentText);
 
                 chatPrompts = new List<Message>();
 
@@ -87,6 +88,25 @@ namespace AIOrchestrator.Model
                     presencePenalty: 0);
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
+
+                var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
+                string[] NamedCharactersFoundArray = NamedCharactersFound.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                // *******************************************************
+                // Create a Vector database entry for each named Character found
+                foreach (string NamedCharcter in NamedCharactersFoundArray)
+                {
+                    // Create a Vector database entry for each named Character found
+                    if (NamedCharcter != "")
+                    {
+                        // Create a Vector database entry for each named Character found
+                        await CreateVectorEntry(NamedCharcter, $"Character information {DateTime.Now.Ticks.ToString()}");
+                    }
+                }
+
+
+                // *******************************************************
+                // Update the Summary
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
@@ -131,72 +151,62 @@ namespace AIOrchestrator.Model
             }
 
             // *****************************************************
-            // Clean up the final summary
-            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Clean up the final summary"));
-            string RawSummary = ChatResponseResult.FirstChoice.Message.Content;
-
-            chatPrompts = new List<Message>();
-
-            chatPrompts.Insert(0,
-            new Message(
-                Role.System,
-                $"Format the following summary to break it up into paragraphs: {RawSummary}"
-                )
-            );
-
-            // Get a response from ChatGPT 
-            var chatRequest = new ChatRequest(
-                chatPrompts,
-                model: "gpt-3.5-turbo-0613",
-                temperature: 0.0,
-                topP: 1,
-                frequencyPenalty: 0,
-                presencePenalty: 0);
-
-            ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+            // Output final summary
 
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"result.FirstChoice.Message - {ChatResponseResult.FirstChoice.Message}");
-            return ChatResponseResult.FirstChoice.Message;
+            LogService.WriteToLog($"Summary - {Summary}");
+            return Summary;
         }
         #endregion
+
 
         // Methods
 
-        #region private string CreateSystemMessage(string paramCurrentSummary, string paramNewText)
-        private string CreateSystemMessage(string paramCurrentSummary, string paramNewText)
+        #region private string CreateSystemMessageCharacterSummary(string paramNewText)
+        private string CreateSystemMessageCharacterSummary(string paramNewText)
         {
-            // The AI should keep this under 1000 words but here we will ensure it
-            paramCurrentSummary = EnsureMaxWords(paramCurrentSummary, 1000);
-
-            return "You are a program that will produce a summary not to exceed 1000 words. \n" +
-                    "Only respond with the contents of the summary nothing else. \n" +
-                    "Output a summary that combines the contents of ###Current Summary### with the additional content in ###New Text###. \n" +
-                    "In the summary only use content from ###Current Summary### and ###New Text###. \n" +
-                    "Only respond with the contents of the summary nothing else. \n" +
-                    "Do not allow the summary to exceed 1000 words. \n" +
-                    $"###Current Summary### is: {paramCurrentSummary}\n" +
+            return "You are a program that will identify the names of the named characters in the content of ###New Text###.\n" +
+                    "Only respond with the names of the named characters nothing else.\n" +
+                    "Only list each character name once.\n" +
+                    "OList each character on a seperate line.\n" +
+                    "Only respond with the names of the named characters nothing else.\n" +
                     $"###New Text### is: {paramNewText}\n";
         }
         #endregion
-
-        #region public static string EnsureMaxWords(string paramCurrentSummary, int maxWords)
-        public static string EnsureMaxWords(string paramCurrentSummary, int maxWords)
+        private async Task CreateVectorEntry(string namedCharacter, string memoryContent)
         {
-            // Split the string by spaces to get words
-            var words = paramCurrentSummary.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var VectorContent = namedCharacter + ":" + memoryContent;
 
-            if (words.Length <= maxWords)
+            // **** Call OpenAI and get embeddings for the memory text
+            // Create an instance of the OpenAI client
+            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
+            // Get the model details
+            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+            // Get embeddings for the text
+            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(VectorContent, model);
+            // Get embeddings as an array of floats
+            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+            // Loop through the embeddings
+            List<VectorData> AllVectors = new List<VectorData>();
+            for (int i = 0; i < EmbeddingVectors.Length; i++)
             {
-                // If the number of words is within the limit, return the original string
-                return paramCurrentSummary;
+                var embeddingVector = new VectorData
+                {
+                    VectorValue = EmbeddingVectors[i]
+                };
+                AllVectors.Add(embeddingVector);
             }
+            // Convert the floats to a single string
+            var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
 
-            // If the number of words exceeds the limit, return only the last 'maxWords' words
-            return string.Join(" ", words.Reverse().Take(maxWords).Reverse());
+            // Write the memory to the .csv file
+            var AIOrchestratorMemoryPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
+            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
+            {
+                streamWriter.WriteLine(VectorContent + "|" + VectorsToSave);
+            }
         }
-        #endregion
     }
 }

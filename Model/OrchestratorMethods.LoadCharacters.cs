@@ -15,10 +15,10 @@ namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> SummarizeCharacters(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> SummarizeCharacters(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<List<string>> LoadCharacters(string Filename, int intMaxLoops, int intChunkSize)
+        public async Task<List<string>> LoadCharacters(string Filename, int intMaxLoops, int intChunkSize)
         {
-            LogService.WriteToLog("SummarizeCharacters - Start");
+            LogService.WriteToLog("LoadCharacters - Start");
 
             string Summary = "";
             string Organization = SettingsService.Organization;
@@ -61,7 +61,7 @@ namespace AIOrchestrator.Model
             while (!ChatGPTCallingComplete)
             {
                 // Read Text
-                var CurrentText = await ExecuteReadCharacters(Filename, StartWordIndex, intChunkSize);
+                var CurrentText = await ExecuteRead(Filename, StartWordIndex, intChunkSize);
 
                 // *****************************************************
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
@@ -90,20 +90,6 @@ namespace AIOrchestrator.Model
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
                 var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
-                string[] NamedCharactersFoundArray = NamedCharactersFound.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                // *******************************************************
-                // Create a Vector database entry for each named Character found
-                foreach (string NamedCharcter in NamedCharactersFoundArray)
-                {
-                    // Create a Vector database entry for each named Character found
-                    if (NamedCharcter != "")
-                    {
-                        // Create a Vector database entry for each named Character found
-                        await CreateVectorEntry(NamedCharcter, $"Character information {DateTime.Now.Ticks.ToString()}");
-                    }
-                }
-
 
                 // *******************************************************
                 // Update the Summary
@@ -153,49 +139,15 @@ namespace AIOrchestrator.Model
 
             // *****************************************************
             // Output final summary
-            
+
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
             LogService.WriteToLog($"Summary - {Summary}");
-            return Summary;
-        }
-        #endregion
 
-        #region private async Task<string> ExecuteReadCharacters(string Filename, int paramStartWordIndex, int intChunkSize)
-        private async Task<string> ExecuteReadCharacters(string Filename, int paramStartWordIndex, int intChunkSize)
-        {
-            // Read the Text from the file
-            var ReadTextResult = await ReadTextFromFileCharacters(Filename, paramStartWordIndex, intChunkSize);
+            string[] SummaryArray = Summary.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // *****************************************************
-            dynamic ReadTextFromFileObject = JsonConvert.DeserializeObject(ReadTextResult);
-            string ReadTextFromFileText = ReadTextFromFileObject.Text;
-            int intCurrentWord = ReadTextFromFileObject.CurrentWord;
-            int intTotalWords = ReadTextFromFileObject.TotalWords;
-
-            // *****************************************************
-            dynamic Databasefile = AIOrchestratorDatabaseObject;
-
-            string strCurrentTask = Databasefile.CurrentTask;
-            int intLastWordRead = intCurrentWord;
-            string strSummary = Databasefile.Summary ?? "";
-
-            // If we are done reading the text, then summarize it
-            if (intCurrentWord >= intTotalWords)
-            {
-                strCurrentTask = "Summarize";
-            }
-
-            // Prepare object to save to AIOrchestratorDatabase.json
-            AIOrchestratorDatabaseObject = new
-            {
-                CurrentTask = strCurrentTask,
-                LastWordRead = intLastWordRead,
-                Summary = strSummary
-            };
-
-            return ReadTextFromFileText;
+            return SummaryArray.ToList();
         }
         #endregion
 
@@ -235,85 +187,5 @@ namespace AIOrchestrator.Model
             return CombinedList;
         }
         #endregion
-
-        #region private async Task<string> ReadTextFromFileCharacters(string filename, int startWordIndex, int intChunkSize)
-        private async Task<string> ReadTextFromFileCharacters(string FileDocumentPath, int startWordIndex, int intChunkSize)
-        {
-            // Read the text from the file
-            string TextFileRaw = "";
-
-            // Open the file to get existing content
-            using (var streamReader = new StreamReader(FileDocumentPath))
-            {
-                TextFileRaw = await streamReader.ReadToEndAsync();
-            }
-
-            // Split the text into words
-            string[] TextFileWords = TextFileRaw.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Get the total number of words
-            int TotalWords = TextFileWords.Length;
-
-            // Get words starting at the startWordIndex
-            string[] TextFileWordsChunk = TextFileWords.Skip(startWordIndex).Take(intChunkSize).ToArray();
-
-            // Set the current word to the startWordIndex + intChunkSize
-            int CurrentWord = startWordIndex + intChunkSize;
-
-            if (CurrentWord >= TotalWords)
-            {
-                // Set the current word to the total words
-                CurrentWord = TotalWords;
-            }
-
-            string ReadTextFromFileResponse = """
-                        {
-                         "Text": "{TextFileWordsChunk}",
-                         "CurrentWord": {CurrentWord},
-                         "TotalWords": {TotalWords},
-                        }
-                        """;
-
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TextFileWordsChunk}", string.Join(" ", TextFileWordsChunk));
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{CurrentWord}", CurrentWord.ToString());
-            ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
-
-            return ReadTextFromFileResponse;
-        }
-        #endregion
-
-        private async Task CreateVectorEntry(string namedCharacter, string memoryContent)
-        {
-            var VectorContent = namedCharacter + ":" + memoryContent;
-
-            // **** Call OpenAI and get embeddings for the memory text
-            // Create an instance of the OpenAI client
-            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
-            // Get the model details
-            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
-            // Get embeddings for the text
-            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(VectorContent, model);
-            // Get embeddings as an array of floats
-            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
-            // Loop through the embeddings
-            List<VectorData> AllVectors = new List<VectorData>();
-            for (int i = 0; i < EmbeddingVectors.Length; i++)
-            {
-                var embeddingVector = new VectorData
-                {
-                    VectorValue = EmbeddingVectors[i]
-                };
-                AllVectors.Add(embeddingVector);
-            }
-            // Convert the floats to a single string
-            var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
-
-            // Write the memory to the .csv file
-            var AIOrchestratorMemoryPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
-            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
-            {
-                streamWriter.WriteLine(VectorContent + "|" + VectorsToSave);
-            }
-        }
     }
 }

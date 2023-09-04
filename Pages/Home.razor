@@ -62,16 +62,27 @@
         </RadzenTabsItem>
         <RadzenTabsItem Text="Summarize Characters">
             <div class="row">
-                <div class="col">
-                    <RadzenButton Text="Summarize Characters" ButtonStyle="ButtonStyle.Info"
-                                  Click="SummarizeCharacters"
-                                  Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;
+                <div class="col">                    
                     <RadzenLabel><b>Chunk Size (words):</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intChunkSize style="width:75px" />
                     &nbsp;&nbsp
                     <RadzenLabel><b>Max Iterations:</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intMaxLoops style="width:75px" />
+                    <div class="row"></div><br />
+                    <div class="row">
+                        <div class="col">
+                            <RadzenButton Text="Load Characters" ButtonStyle="ButtonStyle.Info"
+                                          Click="LoadCharacters"
+                                          Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;<RadzenDropDown @bind-Value=@SelectedCharacter Data=@colCharacters Style="width: 200px" />&nbsp;&nbsp;
+                                          @if(colCharacters.Count > 0)
+                                          {
+                                              <RadzenButton Text="Summarize Character" ButtonStyle="ButtonStyle.Success"
+                                                            Click="SummarizeCharacter"
+                                                            Style="margin-bottom: 10px; width: 200px" />
+                                          }
+                        </div>
+                    </div>
                 </div>
             </div>
-            <RadzenTextArea @bind-Value=@txtSummarizeCharacters Cols="70" Rows="10" />
+            <RadzenTextArea @bind-Value=@txtSummarizeCharacters Cols="75" Rows="10" />
         </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
@@ -80,6 +91,8 @@
     private string txtSummarizeTextShort = "";
     private string txtSummarizeTextLong = "";
     private string txtSummarizeCharacters = "";
+    private string SelectedCharacter = "";
+    private List<string> colCharacters = new List<string>();
     bool InProgress = false;
 
     List<System.IO.FileInfo> DocumentFiles = new List<System.IO.FileInfo>();
@@ -181,16 +194,54 @@
         }
     }
 
-    private async Task SummarizeCharacters()
+    private async Task LoadCharacters()
     {
         try
         {
             InProgress = true;
 
             ClearLog();
+
+            colCharacters = await OrchestratorMethods.LoadCharacters(SelectedFile, intMaxLoops, intChunkSize);
+            InProgress = false;
+        }
+        catch (Exception ex)
+        {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private async Task SummarizeCharacter()
+    {
+        try
+        {
+            if (SelectedCharacter == "")
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = "Please select a character",
+                    Duration = 4000
+                });
+
+                return;
+            }
+
+            InProgress = true;
+
+            ClearLog();
             ClearMemory();
 
-            txtSummarizeCharacters = await OrchestratorMethods.SummarizeCharacters(SelectedFile, intMaxLoops, intChunkSize);
+            txtSummarizeCharacters = await OrchestratorMethods.SummarizeCharacter(SelectedFile, SelectedCharacter, intMaxLoops, intChunkSize);
             InProgress = false;
         }
         catch (Exception ex)
