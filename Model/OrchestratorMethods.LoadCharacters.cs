@@ -20,7 +20,7 @@ namespace AIOrchestrator.Model
         {
             LogService.WriteToLog("LoadCharacters - Start");
 
-            string Summary = "";
+            string CharacterSummary = "";
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -92,8 +92,8 @@ namespace AIOrchestrator.Model
                 var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
 
                 // *******************************************************
-                // Update the Summary
-                Summary = CombineAndSortLists(Summary, NamedCharactersFound);
+                // Update the Character Summary
+                CharacterSummary = CombineAndSortLists(CharacterSummary, NamedCharactersFound);
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
@@ -143,11 +143,11 @@ namespace AIOrchestrator.Model
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"Summary - {Summary}");
+            LogService.WriteToLog($"CharacterSummary - {CharacterSummary}");
 
-            string[] SummaryArray = Summary.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] CharacterSummaryArray = CharacterSummary.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            return SummaryArray.ToList();
+            return CharacterSummaryArray.ToList();
         }
         #endregion
 
