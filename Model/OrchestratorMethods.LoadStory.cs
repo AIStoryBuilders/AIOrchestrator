@@ -9,15 +9,16 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
 using Microsoft.Maui.Storage;
+using static AIOrchestrator.Pages.Memory;
 
 namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> ReadTextLong(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> ReadTextLong(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<string> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
+        public async Task<string> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
         {
-            LogService.WriteToLog("ReadTextLong - Start");
+            LogService.WriteToLog("LoadStory - Start");
 
             string Summary = "";
             string Organization = SettingsService.Organization;
@@ -66,7 +67,7 @@ namespace AIOrchestrator.Model
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
 
                 // Update System Message
-                SystemMessage = CreateSystemMessageLong(CurrentText);
+                SystemMessage = CreateSystemMessageLoadStory(CurrentText);
 
                 chatPrompts = new List<Message>();
 
@@ -145,7 +146,7 @@ namespace AIOrchestrator.Model
 
             // *****************************************************
             // Output final summary
-            
+
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
@@ -156,8 +157,8 @@ namespace AIOrchestrator.Model
 
         // Methods
 
-        #region private string CreateSystemMessageLong(string paramNewText)
-        private string CreateSystemMessageLong(string paramNewText)
+        #region private string CreateSystemMessageLoadStory(string paramNewText)
+        private string CreateSystemMessageLoadStory(string paramNewText)
         {
             return "You are a program that will produce a summary of the content of ###New Text###.\n" +
                     "Only respond with the contents of the summary nothing else.\n" +

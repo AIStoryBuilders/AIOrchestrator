@@ -164,28 +164,5 @@ namespace AIOrchestrator.Model
                     $"###New Text### is: {paramNewText}\n";
         }
         #endregion
-
-        #region private string CombineAndSortLists(string paramExistingList, string paramNewList)
-        private string CombineAndSortLists(string paramExistingList, string paramNewList)
-        {
-            // Split the lists into an arrays
-            string[] ExistingListArray = paramExistingList.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] NewListArray = paramNewList.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Combine the lists
-            string[] CombinedListArray = ExistingListArray.Concat(NewListArray).ToArray();
-
-            // Remove duplicates
-            CombinedListArray = CombinedListArray.Distinct().ToArray();
-
-            // Sort the array
-            Array.Sort(CombinedListArray);
-
-            // Combine the array into a string
-            string CombinedList = string.Join("\n", CombinedListArray);
-
-            return CombinedList;
-        }
-        #endregion
     }
 }

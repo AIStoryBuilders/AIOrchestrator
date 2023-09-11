@@ -84,6 +84,42 @@
             </div>
             <RadzenTextArea @bind-Value=@txtSummarizeCharacter Cols="75" Rows="10" />
         </RadzenTabsItem>
+        <RadzenTabsItem Text="Complete Story">
+            <div class="row">
+                <div class="col">
+                    <RadzenLabel><b>Chunk Size (words):</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intChunkSize style="width:75px" />
+                    &nbsp;&nbsp
+                    <RadzenLabel><b>Max Iterations:</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intMaxLoops style="width:75px" />
+                    <div class="row"></div><br />
+                    <div class="row">
+                        <div class="col">
+                            @if (txtCompleteStory == "")
+                            {
+                                <RadzenButton Text="Load Story" ButtonStyle="ButtonStyle.Info"
+                                              Click="LoadStory"
+                                              Style="margin-bottom: 10px; width: 150px" />
+                            }                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (txtCompleteStory != "")
+            {
+                <RadzenTextArea @bind-Value=@txtNewStory Cols="75" Rows="5" />
+            }&nbsp;&nbsp;<br />
+            @if (txtCompleteStory != "")
+            {
+                <RadzenButton Text="Complete The Story" ButtonStyle="ButtonStyle.Success"
+                              Click="CompleteStory"
+                              Style="margin-bottom: 10px; width: 200px" />
+            }&nbsp;&nbsp;
+            @if (txtCompleteStory != "")
+            {
+                <RadzenButton Text="Reset" ButtonStyle="ButtonStyle.Danger"
+                              Click="ResetStory"
+                              Style="margin-bottom: 10px; width: 100px" />
+            }&nbsp;&nbsp;
+        </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
 @code {
@@ -91,6 +127,8 @@
     private string txtSummarizeTextShort = "";
     private string txtSummarizeTextLong = "";
     private string txtSummarizeCharacter = "";
+    private string txtCompleteStory = "";
+    private string txtNewStory = "";
     private string SelectedCharacter = "";
     private List<string> colCharacters = new List<string>();
     bool InProgress = false;
@@ -259,6 +297,99 @@
                     Summary = "Data Indexed",
                     Detail = "You can perform a vector search on the Memory page",
                     Duration = 8000
+                });
+        }
+        catch (Exception ex)
+        {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private async Task LoadStory()
+    {
+        try
+        {
+            InProgress = true;
+
+            txtCompleteStory = "";
+            ClearLog();
+            ClearMemory();
+
+            txtCompleteStory = await OrchestratorMethods.LoadStory(SelectedFile, intMaxLoops, intChunkSize);
+            InProgress = false;
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Data Indexed",
+                    Detail = "You can perform a vector search on the Memory page",
+                    Duration = 8000
+                });
+        }
+        catch (Exception ex)
+        {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private void ResetStory()
+    {
+        try
+        {
+            InProgress = true;
+
+            txtCompleteStory = "";
+
+            ClearLog();
+            ClearMemory();
+
+            InProgress = false;
+        }
+        catch (Exception ex)
+        {
+            LogService.WriteToLog($"Error: {ex.Message}");
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
+
+    private async Task CompleteStory()
+    {
+        try
+        {
+            InProgress = true;
+
+            var result = await OrchestratorMethods.CompleteStory(txtCompleteStory, intMaxLoops, intChunkSize);
+            InProgress = false;
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Story Complete",
+                    Detail = result,
+                    Duration = 10000
                 });
         }
         catch (Exception ex)

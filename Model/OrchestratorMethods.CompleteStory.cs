@@ -9,17 +9,18 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
 using Microsoft.Maui.Storage;
+using static AIOrchestrator.Pages.Memory;
 
 namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> ReadTextLong(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> ReadTextLong(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<string> CompleteStory(string NewStory, int intMaxLoops, int intChunkSize)
+        public async Task<string> CompleteStory(string NewStory, int intMaxLoops, int intChunkSize)
         {
-            LogService.WriteToLog("ReadTextLong - Start");
+            LogService.WriteToLog("CompleteStory - Start");
 
-            string Summary = "";
+            string FinalSummary = "";
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -60,13 +61,13 @@ namespace AIOrchestrator.Model
             while (!ChatGPTCallingComplete)
             {
                 // Read Text
-                var CurrentText = await ExecuteRead(Filename, StartWordIndex, intChunkSize);
+                var CurrentText = "";
 
                 // *****************************************************
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
 
                 // Update System Message
-                SystemMessage = CreateSystemMessageLong(CurrentText);
+                SystemMessage = CreateSystemMessageCharacters(CurrentText);
 
                 chatPrompts = new List<Message>();
 
@@ -88,18 +89,11 @@ namespace AIOrchestrator.Model
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
-                var ChatResponseContent = ChatResponseResult.FirstChoice.Message.Content;
+                var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
 
-                // Create a Vector database entry 
-                if (ChatResponseContent != "")
-                {
-                    // *******************************************************                   
-                    // Create a Vector database entry for each Character summary found
-                    await CreateVectorEntry(ChatResponseContent);
-                }
-
-                // Update the Summary
-                Summary = Summary + ChatResponseContent + "\n\n";
+                // *******************************************************
+                // Update the Character Summary
+                FinalSummary = CombineAndSortLists(FinalSummary, NamedCharactersFound);
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
@@ -145,25 +139,26 @@ namespace AIOrchestrator.Model
 
             // *****************************************************
             // Output final summary
-            
+
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"Summary - {Summary}");
-            return Summary;
+            LogService.WriteToLog($"CharacterSummary - {FinalSummary}");
+
+            return FinalSummary;
         }
         #endregion
 
         // Methods
 
-        #region private string CreateSystemMessageLong(string paramNewText)
-        private string CreateSystemMessageLong(string paramNewText)
+        #region private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
+        private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
         {
-            return "You are a program that will produce a summary of the content of ###New Text###.\n" +
-                    "Only respond with the contents of the summary nothing else.\n" +
-                    "Always output complete sentences.\n" +
-                    "Only respond with the contents of the summary nothing else.\n" +
-                    $"###New Text### is: {paramNewText}\n";
+            return "You are a program that will write a paragraph to continue a story starting with ###New Text###.\n" +
+                   "Only respond with a paragraph that complete the story nothing else.\n" +
+                   "Only use information from ###New Text### and ###Background Text###.\n" +
+                   $"###New Text### is: {paramNewText}\n" +
+                   $"###Background Text### is: {paramBackgroundText}\n";
         }
         #endregion
     }

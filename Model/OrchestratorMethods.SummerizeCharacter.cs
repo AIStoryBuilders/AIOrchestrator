@@ -157,7 +157,6 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
-
         // Methods
 
         #region private string CreateSystemMessageCharacterSummary(string paramCharacterName, string paramNewText)
