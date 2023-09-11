@@ -159,7 +159,7 @@ namespace AIOrchestrator.Model
             return "You are a program that will identify the names of the named characters in the content of ###New Text###.\n" +
                     "Only respond with the names of the named characters nothing else.\n" +
                     "Only list each character name once.\n" +
-                    "OList each character on a seperate line.\n" +
+                    "List each character on a seperate line.\n" +
                     "Only respond with the names of the named characters nothing else.\n" +
                     $"###New Text### is: {paramNewText}\n";
         }

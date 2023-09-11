@@ -62,7 +62,7 @@
         </RadzenTabsItem>
         <RadzenTabsItem Text="Summarize Characters">
             <div class="row">
-                <div class="col">                    
+                <div class="col">
                     <RadzenLabel><b>Chunk Size (words):</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intChunkSize style="width:75px" />
                     &nbsp;&nbsp
                     <RadzenLabel><b>Max Iterations:</b></RadzenLabel>&nbsp;&nbsp<RadzenNumeric @bind-Value=@intMaxLoops style="width:75px" />
@@ -72,17 +72,17 @@
                             <RadzenButton Text="Load Characters" ButtonStyle="ButtonStyle.Info"
                                           Click="LoadCharacters"
                                           Style="margin-bottom: 10px; width: 150px" />&nbsp;&nbsp;<RadzenDropDown @bind-Value=@SelectedCharacter Data=@colCharacters Style="width: 200px" />&nbsp;&nbsp;
-                                          @if(colCharacters.Count > 0)
-                                          {
-                                              <RadzenButton Text="Summarize Character" ButtonStyle="ButtonStyle.Success"
-                                                            Click="SummarizeCharacter"
-                                                            Style="margin-bottom: 10px; width: 200px" />
-                                          }
+                            @if (colCharacters.Count > 0)
+                            {
+                                <RadzenButton Text="Summarize Character" ButtonStyle="ButtonStyle.Success"
+                                              Click="SummarizeCharacter"
+                                              Style="margin-bottom: 10px; width: 200px" />
+                            }
                         </div>
                     </div>
                 </div>
             </div>
-            <RadzenTextArea @bind-Value=@txtSummarizeCharacters Cols="75" Rows="10" />
+            <RadzenTextArea @bind-Value=@txtSummarizeCharacter Cols="75" Rows="10" />
         </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
@@ -90,7 +90,7 @@
     private string TextFileRaw = "";
     private string txtSummarizeTextShort = "";
     private string txtSummarizeTextLong = "";
-    private string txtSummarizeCharacters = "";
+    private string txtSummarizeCharacter = "";
     private string SelectedCharacter = "";
     private List<string> colCharacters = new List<string>();
     bool InProgress = false;
@@ -176,9 +176,18 @@
             InProgress = true;
 
             ClearLog();
+            ClearMemory();
 
             txtSummarizeTextLong = await OrchestratorMethods.ReadTextLong(SelectedFile, intMaxLoops, intChunkSize);
             InProgress = false;
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Data Indexed",
+                    Detail = "You can perform a vector search on the Memory page",
+                    Duration = 8000
+                });
         }
         catch (Exception ex)
         {
@@ -226,12 +235,12 @@
             if (SelectedCharacter == "")
             {
                 NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = "Please select a character",
-                    Duration = 4000
-                });
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = "Please select a character",
+                        Duration = 4000
+                    });
 
                 return;
             }
@@ -241,8 +250,16 @@
             ClearLog();
             ClearMemory();
 
-            txtSummarizeCharacters = await OrchestratorMethods.SummarizeCharacter(SelectedFile, SelectedCharacter, intMaxLoops, intChunkSize);
+            txtSummarizeCharacter = await OrchestratorMethods.SummarizeCharacter(SelectedFile, SelectedCharacter, intMaxLoops, intChunkSize);
             InProgress = false;
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Data Indexed",
+                    Detail = "You can perform a vector search on the Memory page",
+                    Duration = 8000
+                });
         }
         catch (Exception ex)
         {

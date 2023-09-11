@@ -88,8 +88,18 @@ namespace AIOrchestrator.Model
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
+                var ChatResponseContent = ChatResponseResult.FirstChoice.Message.Content;
+
+                // Create a Vector database entry 
+                if (ChatResponseContent != "")
+                {
+                    // *******************************************************                   
+                    // Create a Vector database entry for each Character summary found
+                    await CreateVectorEntry(ChatResponseContent);
+                }
+
                 // Update the Summary
-                Summary = Summary + ChatResponseResult.FirstChoice.Message.Content + "\n\n";
+                Summary = Summary + ChatResponseContent + "\n\n";
 
                 // Update the total number of tokens used by the API
                 TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;

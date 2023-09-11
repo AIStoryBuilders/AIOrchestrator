@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using OpenAI;
+using static AIOrchestrator.Pages.Memory;
 
 namespace AIOrchestrator.Model
 {
@@ -99,6 +101,40 @@ namespace AIOrchestrator.Model
             ReadTextFromFileResponse = ReadTextFromFileResponse.Replace("{TotalWords}", TotalWords.ToString());
 
             return ReadTextFromFileResponse;
+        }
+        #endregion
+
+        #region private async Task CreateVectorEntry(string vectorcontent)
+        private async Task CreateVectorEntry(string VectorContent)
+        {
+            // **** Call OpenAI and get embeddings for the memory text
+            // Create an instance of the OpenAI client
+            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
+            // Get the model details
+            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+            // Get embeddings for the text
+            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(VectorContent, model);
+            // Get embeddings as an array of floats
+            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+            // Loop through the embeddings
+            List<VectorData> AllVectors = new List<VectorData>();
+            for (int i = 0; i < EmbeddingVectors.Length; i++)
+            {
+                var embeddingVector = new VectorData
+                {
+                    VectorValue = EmbeddingVectors[i]
+                };
+                AllVectors.Add(embeddingVector);
+            }
+            // Convert the floats to a single string
+            var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
+
+            // Write the memory to the .csv file
+            var AIOrchestratorMemoryPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
+            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
+            {
+                streamWriter.WriteLine(VectorContent + "|" + VectorsToSave);
+            }
         }
         #endregion
 

@@ -20,7 +20,7 @@ namespace AIOrchestrator.Model
         {
             LogService.WriteToLog("SummarizeCharacter - Start");
 
-            string Summary = "";
+            string FinalSummary = "";
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -67,7 +67,7 @@ namespace AIOrchestrator.Model
                 dynamic Databasefile = AIOrchestratorDatabaseObject;
 
                 // Update System Message
-                SystemMessage = CreateSystemMessageCharacterSummary(CurrentText);
+                SystemMessage = CreateSystemMessageCharacterSummary(paramSelectedCharacter, CurrentText);
 
                 chatPrompts = new List<Message>();
 
@@ -89,21 +89,17 @@ namespace AIOrchestrator.Model
 
                 ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
 
-                var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
-                string[] NamedCharactersFoundArray = NamedCharactersFound.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var CharacterSummaryFound = ChatResponseResult.FirstChoice.Message.Content;
 
-                // *******************************************************
-                // Create a Vector database entry for each named Character found
-                foreach (string NamedCharcter in NamedCharactersFoundArray)
+                // Create a Vector database entry 
+                if (CharacterSummaryFound != "")
                 {
-                    // Create a Vector database entry for each named Character found
-                    if (NamedCharcter != "")
-                    {
-                        // Create a Vector database entry for each named Character found
-                        await CreateVectorEntry(NamedCharcter, $"Character information {DateTime.Now.Ticks.ToString()}");
-                    }
+                    // *******************************************************                   
+                    // Create a Vector database entry for each Character summary found
+                    await CreateVectorEntry(CharacterSummaryFound);
                 }
 
+                FinalSummary = FinalSummary + CharacterSummaryFound + "\n\n";
 
                 // *******************************************************
                 // Update the Summary
@@ -156,57 +152,22 @@ namespace AIOrchestrator.Model
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"Summary - {Summary}");
-            return Summary;
+            LogService.WriteToLog($"Summary - {FinalSummary}");
+            return FinalSummary;
         }
         #endregion
 
 
         // Methods
 
-        #region private string CreateSystemMessageCharacterSummary(string paramNewText)
-        private string CreateSystemMessageCharacterSummary(string paramNewText)
+        #region private string CreateSystemMessageCharacterSummary(string paramCharacterName, string paramNewText)
+        private string CreateSystemMessageCharacterSummary(string paramCharacterName, string paramNewText)
         {
-            return "You are a program that will identify the names of the named characters in the content of ###New Text###.\n" +
-                    "Only respond with the names of the named characters nothing else.\n" +
-                    "Only list each character name once.\n" +
-                    "OList each character on a seperate line.\n" +
-                    "Only respond with the names of the named characters nothing else.\n" +
+            return "You are a program that will produce a short summary of what the ###Named Character### does in the content of ###New Text###.\n" +
+                    "Only respond with a short summary of what the ###Named Character### does nothing else.\n" +
+                    $"###Named Character### is: {paramCharacterName}\n" +
                     $"###New Text### is: {paramNewText}\n";
         }
         #endregion
-        private async Task CreateVectorEntry(string namedCharacter, string memoryContent)
-        {
-            var VectorContent = namedCharacter + ":" + memoryContent;
-
-            // **** Call OpenAI and get embeddings for the memory text
-            // Create an instance of the OpenAI client
-            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
-            // Get the model details
-            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
-            // Get embeddings for the text
-            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(VectorContent, model);
-            // Get embeddings as an array of floats
-            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
-            // Loop through the embeddings
-            List<VectorData> AllVectors = new List<VectorData>();
-            for (int i = 0; i < EmbeddingVectors.Length; i++)
-            {
-                var embeddingVector = new VectorData
-                {
-                    VectorValue = EmbeddingVectors[i]
-                };
-                AllVectors.Add(embeddingVector);
-            }
-            // Convert the floats to a single string
-            var VectorsToSave = "[" + string.Join(",", AllVectors.Select(x => x.VectorValue)) + "]";
-
-            // Write the memory to the .csv file
-            var AIOrchestratorMemoryPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
-            using (var streamWriter = new StreamWriter(AIOrchestratorMemoryPath, true))
-            {
-                streamWriter.WriteLine(VectorContent + "|" + VectorsToSave);
-            }
-        }
     }
 }
