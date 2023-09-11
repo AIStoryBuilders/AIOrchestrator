@@ -92,14 +92,14 @@ namespace AIOrchestrator.Model
                 var CharacterSummaryFound = ChatResponseResult.FirstChoice.Message.Content;
 
                 // Create a Vector database entry 
-                if (CharacterSummaryFound != "")
+                if ((CharacterSummaryFound != "") && (!CharacterSummaryFound.Contains("[empty]")))
                 {
                     // *******************************************************                   
                     // Create a Vector database entry for each Character summary found
                     await CreateVectorEntry(CharacterSummaryFound);
-                }
 
-                FinalSummary = FinalSummary + CharacterSummaryFound + "\n\n";
+                    FinalSummary = FinalSummary + CharacterSummaryFound + "\n\n";
+                }
 
                 // *******************************************************
                 // Update the Summary
@@ -163,10 +163,11 @@ namespace AIOrchestrator.Model
         #region private string CreateSystemMessageCharacterSummary(string paramCharacterName, string paramNewText)
         private string CreateSystemMessageCharacterSummary(string paramCharacterName, string paramNewText)
         {
-            return "You are a program that will produce a short summary of what the ###Named Character### does in the content of ###New Text###.\n" +
-                    "Only respond with a short summary of what the ###Named Character### does nothing else.\n" +
-                    $"###Named Character### is: {paramCharacterName}\n" +
-                    $"###New Text### is: {paramNewText}\n";
+            return "You are a program that will produce a short summary about ###Named Character### in the content of ###New Text###.\n" +
+                   "Only respond with a short summary about ###Named Character### nothing else.\n" +
+                   "If ###Named Character### is not mentioned in ###New Text### return [empty] as a response.\n" +
+                   $"###Named Character### is: {paramCharacterName}\n" +
+                   $"###New Text### is: {paramNewText}\n";
         }
         #endregion
     }
