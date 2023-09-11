@@ -12,14 +12,20 @@ namespace AIOrchestrator.Model
         public string Summary { get; set; }
         dynamic AIOrchestratorDatabaseObject { get; set; }
 
-        List<ChatMessage> ChatMessages = new List<ChatMessage>();
+        public List<ChatMessage> ChatMessages = new List<ChatMessage>();
+
+        public List<(string, float)> similarities = new List<(string, float)>();
+
+        public Dictionary<string, string> AIOrchestratorMemory = new Dictionary<string, string>();
 
         // Constructor
-        public OrchestratorMethods(SettingsService _SettingsService, LogService _LogService) 
+        public OrchestratorMethods(SettingsService _SettingsService, LogService _LogService)
         {
             SettingsService = _SettingsService;
             LogService = _LogService;
         }
+
+        // Reading Text
 
         #region private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
         private async Task<string> ExecuteRead(string Filename, int paramStartWordIndex, int intChunkSize)
@@ -104,6 +110,8 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
+        // Memory and Vectors
+
         #region private async Task CreateVectorEntry(string vectorcontent)
         private async Task CreateVectorEntry(string VectorContent)
         {
@@ -138,6 +146,102 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
+        #region public async Task<List<(string, float)>> SearchMemory(string SearchText, int intResultsToReturn)
+        public async Task<List<(string, float)>> SearchMemory(string SearchText, int intResultsToReturn)
+        {
+            // Clear the memory
+            AIOrchestratorMemory = new Dictionary<string, string>();
+
+            // Read the lines from the .csv file
+            var AIOrchestratorMemoryPath =
+            $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
+
+            // Read the lines from the .csv file
+            foreach (var line in System.IO.File.ReadAllLines(AIOrchestratorMemoryPath))
+            {
+                var splitLine = line.Split('|');
+                var KEY = splitLine[0];
+                var VALUE = splitLine[1];
+
+                AIOrchestratorMemory.Add(KEY, VALUE);
+            }
+
+            // **** Call OpenAI and get embeddings for the memory text
+            // Create an instance of the OpenAI client
+            var api = new OpenAIClient(new OpenAIAuthentication(SettingsService.ApiKey, SettingsService.Organization));
+            // Get the model details
+            var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+            // Get embeddings for the text
+            var embeddings = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(SearchText, model);
+            // Get embeddings as an array of floats
+            var EmbeddingVectors = embeddings.Data[0].Embedding.Select(d => (float)d).ToArray();
+
+            // Reset the similarities list
+            similarities = new List<(string, float)>();
+
+            // Calculate the similarity between the prompt's
+            // embedding and each existing embedding
+            foreach (var embedding in AIOrchestratorMemory)
+            {
+                if (embedding.Value != null)
+                {
+                    if (embedding.Value != "")
+                    {
+                        var ConvertEmbeddingToFloats = JsonConvert.DeserializeObject<List<float>>(embedding.Value);
+
+                        var similarity =
+                        CosineSimilarity(
+                            EmbeddingVectors,
+                        ConvertEmbeddingToFloats.ToArray());
+
+                        similarities.Add((embedding.Key, similarity));
+                    }
+                }
+            }
+
+            // Sort the results by similarity in descending order
+            similarities.Sort((a, b) => b.Item2.CompareTo(a.Item2));
+
+            return similarities.Take(intResultsToReturn).ToList();
+        } 
+        #endregion
+
+        // Utility Methods
+
+        #region public static float CosineSimilarity(float[] vector1, float[] vector2)
+        public static float CosineSimilarity(float[] vector1, float[] vector2)
+        {
+            // Initialize variables for dot product and
+            // magnitudes of the vectors
+            float dotProduct = 0;
+            float magnitude1 = 0;
+            float magnitude2 = 0;
+
+            // Iterate through the vectors and calculate
+            // the dot product and magnitudes
+            for (int i = 0; i < vector1?.Length; i++)
+            {
+                // Calculate dot product
+                dotProduct += vector1[i] * vector2[i];
+
+                // Calculate squared magnitude of vector1
+                magnitude1 += vector1[i] * vector1[i];
+
+                // Calculate squared magnitude of vector2
+                magnitude2 += vector2[i] * vector2[i];
+            }
+
+            // Take the square root of the squared magnitudes
+            // to obtain actual magnitudes
+            magnitude1 = (float)Math.Sqrt(magnitude1);
+            magnitude2 = (float)Math.Sqrt(magnitude2);
+
+            // Calculate and return cosine similarity by dividing
+            // dot product by the product of magnitudes
+            return dotProduct / (magnitude1 * magnitude2);
+        } 
+        #endregion
+
         #region private string CombineAndSortLists(string paramExistingList, string paramNewList)
         private string CombineAndSortLists(string paramExistingList, string paramNewList)
         {
@@ -170,7 +274,7 @@ namespace AIOrchestrator.Model
             {
                 Message = message;
             }
-        } 
+        }
         #endregion
     }
 }
