@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using static AIOrchestrator.Model.OrchestratorMethods;
 using Microsoft.Maui.Storage;
 using static AIOrchestrator.Pages.Memory;
+using System.Collections.Generic;
 
 namespace AIOrchestrator.Model
 {
@@ -19,12 +20,9 @@ namespace AIOrchestrator.Model
         public async Task<string> CompleteStory(string NewStory, int intMaxLoops, int intChunkSize)
         {
             LogService.WriteToLog("CompleteStory - Start");
-
-            string FinalSummary = "";
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
-            int TotalTokens = 0;
 
             ChatMessages = new List<ChatMessage>();
 
@@ -51,101 +49,46 @@ namespace AIOrchestrator.Model
             ChatResponse ChatResponseResult = new ChatResponse();
             List<Message> chatPrompts = new List<Message>();
 
-            // Call ChatGPT
-            int CallCount = 0;
-
-            // We need to start a While loop
-            bool ChatGPTCallingComplete = false;
-            int StartWordIndex = 0;
-
-            while (!ChatGPTCallingComplete)
-            {
-                // Read Text
-                var CurrentText = "";
-
-                // *****************************************************
-                dynamic Databasefile = AIOrchestratorDatabaseObject;
-
-                // Update System Message
-                SystemMessage = CreateSystemMessageCharacters(CurrentText);
-
-                chatPrompts = new List<Message>();
-
-                chatPrompts.Insert(0,
-                new Message(
-                    Role.System,
-                    SystemMessage
-                    )
-                );
-
-                // Get a response from ChatGPT 
-                var FinalChatRequest = new ChatRequest(
-                    chatPrompts,
-                    model: "gpt-3.5-turbo-0613",
-                    temperature: 0.0,
-                    topP: 1,
-                    frequencyPenalty: 0,
-                    presencePenalty: 0);
-
-                ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
-
-                var NamedCharactersFound = ChatResponseResult.FirstChoice.Message.Content;
-
-                // *******************************************************
-                // Update the Character Summary
-                FinalSummary = CombineAndSortLists(FinalSummary, NamedCharactersFound);
-
-                // Update the total number of tokens used by the API
-                TotalTokens = TotalTokens + ChatResponseResult.Usage.TotalTokens ?? 0;
-
-                LogService.WriteToLog($"Iteration: {CallCount} - TotalTokens: {TotalTokens} - result.FirstChoice.Message - {ChatResponseResult.FirstChoice.Message}");
-
-                if (Databasefile.CurrentTask == "Read Text")
-                {
-                    // Keep looping
-                    ChatGPTCallingComplete = false;
-                    CallCount = CallCount + 1;
-                    StartWordIndex = Databasefile.LastWordRead;
-
-                    // Update the AIOrchestratorDatabase.json file
-                    AIOrchestratorDatabaseObject = new
-                    {
-                        CurrentTask = "Read Text",
-                        LastWordRead = Databasefile.LastWordRead,
-                        Summary = ChatResponseResult.FirstChoice.Message.Content
-                    };
-
-                    // Check if we have exceeded the maximum number of calls
-                    if (CallCount > intMaxLoops)
-                    {
-                        // Break out of the loop
-                        ChatGPTCallingComplete = true;
-                        LogService.WriteToLog($"* Breaking out of loop * Iteration: {CallCount}");
-                        ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Break out of the loop - Iteration: {CallCount}"));
-                    }
-                    else
-                    {
-                        ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Continue to Loop - Iteration: {CallCount}"));
-                    }
-                }
-                else
-                {
-                    // Break out of the loop
-                    ChatGPTCallingComplete = true;
-                    LogService.WriteToLog($"Iteration: {CallCount}");
-                    ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Break out of the loop - Iteration: {CallCount}"));
-                }
-            }
+            // Read Text
+            var CurrentText = "";
 
             // *****************************************************
-            // Output final summary
+            dynamic Databasefile = AIOrchestratorDatabaseObject;
 
-            // Save AIOrchestratorDatabase.json
-            objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
+            // Get Background Text - Perform vector search using CurrentText
+            List<(string, float)> SearchResults = await SearchMemory(CurrentText, 5);
 
-            LogService.WriteToLog($"CharacterSummary - {FinalSummary}");
+            // Create a single string from the first colum of SearchResults
+            string BackgroundText = string.Join(",", SearchResults.Select(x => x.Item1));
 
-            return FinalSummary;
+            // Update System Message
+            SystemMessage = CreateSystemMessageStory(CurrentText, BackgroundText);
+
+            chatPrompts = new List<Message>();
+
+            chatPrompts.Insert(0,
+            new Message(
+                Role.System,
+                SystemMessage
+                )
+            );
+
+            // Get a response from ChatGPT 
+            var FinalChatRequest = new ChatRequest(
+                chatPrompts,
+                model: "gpt-3.5-turbo-0613",
+                temperature: 0.0,
+                topP: 1,
+                frequencyPenalty: 0,
+                presencePenalty: 0);
+
+            ChatResponseResult = await api.ChatEndpoint.GetCompletionAsync(FinalChatRequest);
+
+            // *****************************************************
+
+            LogService.WriteToLog($"TotalTokens: {ChatResponseResult.Usage.TotalTokens} - ChatResponseResult - {ChatResponseResult.FirstChoice.Message.Content}");
+
+            return ChatResponseResult.FirstChoice.Message.Content;
         }
         #endregion
 
