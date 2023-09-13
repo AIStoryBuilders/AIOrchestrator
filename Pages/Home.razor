@@ -93,7 +93,7 @@
                     <div class="row"></div><br />
                     <div class="row">
                         <div class="col">
-                            @if (txtCompleteStory == "")
+                            @if (!StoryLoaded)
                             {
                                 <RadzenButton Text="Load Story" ButtonStyle="ButtonStyle.Info"
                                               Click="LoadStory"
@@ -103,17 +103,17 @@
                     </div>
                 </div>
             </div>
-            @if (txtCompleteStory != "")
+            @if (StoryLoaded)
             {
                 <RadzenTextArea @bind-Value=@txtNewStory Cols="75" Rows="10" />
             }&nbsp;&nbsp;<br />
-            @if (txtCompleteStory != "")
+            @if (StoryLoaded)
             {
                 <RadzenButton Text="Complete The Story" ButtonStyle="ButtonStyle.Success"
                               Click="CompleteStory"
                               Style="margin-bottom: 10px; width: 200px" />
             }&nbsp;&nbsp;
-            @if (txtCompleteStory != "")
+            @if (StoryLoaded)
             {
                 <RadzenButton Text="Reset" ButtonStyle="ButtonStyle.Danger"
                               Click="ResetStory"
@@ -127,7 +127,7 @@
     private string txtSummarizeTextShort = "";
     private string txtSummarizeTextLong = "";
     private string txtSummarizeCharacter = "";
-    private string txtCompleteStory = "";
+    private bool StoryLoaded = false;
     private string txtNewStory = "";
     private string SelectedCharacter = "";
     private List<string> colCharacters = new List<string>();
@@ -319,11 +319,11 @@
         {
             InProgress = true;
 
-            txtCompleteStory = "";
+            StoryLoaded = false;
             ClearLog();
             ClearMemory();
 
-            txtCompleteStory = await OrchestratorMethods.LoadStory(SelectedFile, intMaxLoops, intChunkSize);
+            StoryLoaded = await OrchestratorMethods.LoadStory(SelectedFile, intMaxLoops, intChunkSize);
             InProgress = false;
 
             NotificationService.Notify(new NotificationMessage
@@ -354,7 +354,7 @@
         {
             InProgress = true;
 
-            txtCompleteStory = "";
+            StoryLoaded = false;
 
             ClearLog();
             ClearMemory();
@@ -381,7 +381,7 @@
         {
             InProgress = true;
 
-            var result = await OrchestratorMethods.CompleteStory(txtCompleteStory, intMaxLoops, intChunkSize);
+            var result = await OrchestratorMethods.CompleteStory(txtNewStory, intMaxLoops, intChunkSize);
             InProgress = false;
 
             NotificationService.Notify(new NotificationMessage

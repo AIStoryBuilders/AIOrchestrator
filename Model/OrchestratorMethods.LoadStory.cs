@@ -15,12 +15,12 @@ namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
-        public async Task<string> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
+        #region public async Task<bool> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
+        public async Task<bool> LoadStory(string Filename, int intMaxLoops, int intChunkSize)
         {
             LogService.WriteToLog("LoadStory - Start");
 
-            string Summary = "";
+            bool StoryLoaded = false;
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
             string SystemMessage = "";
@@ -145,13 +145,13 @@ namespace AIOrchestrator.Model
             }
 
             // *****************************************************
-            // Output final summary
-
             // Save AIOrchestratorDatabase.json
             objAIOrchestratorDatabase.WriteFile(AIOrchestratorDatabaseObject);
 
-            LogService.WriteToLog($"Summary - {Summary}");
-            return Summary;
+            StoryLoaded = true;
+
+            LogService.WriteToLog($"StoryLoaded - {StoryLoaded}");
+            return StoryLoaded;
         }
         #endregion
 
