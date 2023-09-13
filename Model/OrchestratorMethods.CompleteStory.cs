@@ -154,8 +154,9 @@ namespace AIOrchestrator.Model
         #region private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
         private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
         {
-            return "You are a program that will write a paragraph to continue a story starting with ###New Text###.\n" +
-                   "Only respond with a paragraph that complete the story nothing else.\n" +
+            return "You are a program that will write a paragraph to continue a story starting with ###New Text### " +
+                   "only using information from ###New Text### and ###Background Text###.\n" +
+                   "Only respond with a paragraph that completes the story nothing else.\n" +
                    "Only use information from ###New Text### and ###Background Text###.\n" +
                    $"###New Text### is: {paramNewText}\n" +
                    $"###Background Text### is: {paramBackgroundText}\n";
