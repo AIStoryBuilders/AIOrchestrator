@@ -49,20 +49,17 @@ namespace AIOrchestrator.Model
             ChatResponse ChatResponseResult = new ChatResponse();
             List<Message> chatPrompts = new List<Message>();
 
-            // Read Text
-            var CurrentText = "";
-
             // *****************************************************
             dynamic Databasefile = AIOrchestratorDatabaseObject;
 
-            // Get Background Text - Perform vector search using CurrentText
-            List<(string, float)> SearchResults = await SearchMemory(CurrentText, 5);
+            // Get Background Text - Perform vector search using NewStory
+            List<(string, float)> SearchResults = await SearchMemory(NewStory, 5);
 
             // Create a single string from the first colum of SearchResults
             string BackgroundText = string.Join(",", SearchResults.Select(x => x.Item1));
 
             // Update System Message
-            SystemMessage = CreateSystemMessageStory(CurrentText, BackgroundText);
+            SystemMessage = CreateSystemMessageStory(NewStory, BackgroundText);
 
             chatPrompts = new List<Message>();
 

@@ -384,12 +384,14 @@
             var result = await OrchestratorMethods.CompleteStory(txtNewStory, intMaxLoops, intChunkSize);
             InProgress = false;
 
+            txtNewStory = result;
+
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
                     Summary = "Story Complete",
-                    Detail = result,
-                    Duration = 10000
+                    Detail = "Processed",
+                    Duration = 4000
                 });
         }
         catch (Exception ex)
