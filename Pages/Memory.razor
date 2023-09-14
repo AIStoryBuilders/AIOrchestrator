@@ -43,11 +43,15 @@
         // Read the lines from the .csv file
         foreach (var line in System.IO.File.ReadAllLines(AIOrchestratorMemoryPath))
         {
-            var splitLine = line.Split('|');
-            var KEY = splitLine[0];
-            var VALUE = splitLine[1];
+            try
+            {
+                var splitLine = line.Split('|');
+                var KEY = splitLine[0];
+                var VALUE = splitLine[1];
 
-            AIOrchestratorMemory.Add(KEY, VALUE);
+                AIOrchestratorMemory.Add(KEY, VALUE);
+            }
+            catch { }
         }        
     }
 
