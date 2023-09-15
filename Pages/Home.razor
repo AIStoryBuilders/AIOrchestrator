@@ -153,8 +153,8 @@
             </div>
             @if (StoryLoaded)
             {
-                <RadzenTextArea @bind-Value=@txtChapterDescription Cols="40" Rows="10" />
-                <RadzenTextArea @bind-Value=@txtNewChapter Cols="40" Rows="10" />
+                <RadzenTextArea Placeholder="Chapter Description" @bind-Value=@txtChapterDescription Cols="40" Rows="10" />
+                <RadzenTextArea Placeholder="Chapter Output" @bind-Value=@txtNewChapter Cols="60" Rows="10" />
             }&nbsp;&nbsp;<br />
             @if (StoryLoaded)
             {
@@ -476,6 +476,9 @@
 
             txtNewChapter = "";
 
+            // Trim the description to 500 words
+            txtChapterDescription = OrchestratorMethods.TrimToMaxWords(txtChapterDescription, 500);
+
             var result = await OrchestratorMethods.CompleteChapter(txtChapterDescription, SelectedModel);
             InProgress = false;
 
@@ -520,8 +523,8 @@
 
     void OnTabChange(int index)
     {
-        if (index == 4) // Complete Story Tab
-        {
+        if ((index == 4) || (index == 5)) // Complete Story Tab
+    {
             // Read the first line to see if the latest story is loaded
             var AIOrchestratorMemoryPath =
             $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";

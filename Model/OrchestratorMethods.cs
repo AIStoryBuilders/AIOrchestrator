@@ -265,6 +265,21 @@ namespace AIOrchestrator.Model
         }
         #endregion
 
+        #region public static string TrimToMaxWords(string input, int maxWords = 500)
+        public static string TrimToMaxWords(string input, int maxWords = 500)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            string[] words = input.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (words.Length <= maxWords)
+                return input;
+
+            return string.Join(" ", words.Take(maxWords));
+        } 
+        #endregion
+
         #region public class ReadTextEventArgs : EventArgs
         public class ReadTextEventArgs : EventArgs
         {

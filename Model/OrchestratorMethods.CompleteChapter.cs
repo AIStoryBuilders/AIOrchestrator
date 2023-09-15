@@ -53,10 +53,13 @@ namespace AIOrchestrator.Model
             dynamic Databasefile = AIOrchestratorDatabaseObject;
 
             // Get Background Text - Perform vector search using NewChapter
-            List<(string, float)> SearchResults = await SearchMemory(NewChapter, 5);
+            List<(string, float)> SearchResults = await SearchMemory(NewChapter, 10);
 
             // Create a single string from the first colum of SearchResults
             string BackgroundText = string.Join(",", SearchResults.Select(x => x.Item1));
+
+            // Trim BackgroundText to 5000 words (so we don't run out of tokens)
+            BackgroundText = OrchestratorMethods.TrimToMaxWords(BackgroundText, 5000);
 
             // Update System Message
             SystemMessage = CreateSystemMessageChapter(NewChapter, BackgroundText);
@@ -91,15 +94,15 @@ namespace AIOrchestrator.Model
 
         // Methods
 
-        #region private string CreateSystemMessageChapter(string paramNewText, string paramBackgroundText)
-        private string CreateSystemMessageChapter(string paramNewText, string paramBackgroundText)
+        #region private string CreateSystemMessageChapter(string paramChapterDescription, string paramBackgroundText)
+        private string CreateSystemMessageChapter(string paramChapterDescription, string paramBackgroundText)
         {
-            return "You are a program that will write a paragraph to continue a Chapter starting " +
-                   "with the content in ###New Text###. Write the paragraph \n" +
-                   "only using information from ###New Text### and ###Background Text###.\n" +
-                   "Only respond with a paragraph that completes the Chapter nothing else.\n" +
-                   "Only use information from ###New Text### and ###Background Text###.\n" +
-                   $"###New Text### is: {paramNewText}\n" +
+            return "You are a program that will write a complete 2000 word Chapter that follows " +
+                   "the description in ###CHAPTER DESCRIPTION###. Write the Chapter \n" +
+                   "only using information from ###Background Text###.\n" +
+                   "Only respond with output that contains the Chapter nothing else.\n" +
+                   "Only use information from ###CHAPTER DESCRIPTION### and ###Background Text###.\n" +
+                   $"###CHAPTER DESCRIPTION### is: {paramChapterDescription}\n" +
                    $"###Background Text### is: {paramBackgroundText}\n";
         }
         #endregion
