@@ -18,7 +18,12 @@
 <!-- Dropdown showing files in the Documents directory -->
 <div class="row">
     <div class="col">
-        <RadzenLabel><b>Select File:</b></RadzenLabel><RadzenDropDown @bind-Value=@SelectedFile Data=@DocumentFiles TextProperty="Name" ValueProperty="FullName" Style="width: 300px" />
+        <RadzenLabel><b>Select File:</b></RadzenLabel>
+        <RadzenDropDown @bind-Value=@SelectedFile 
+        Data=@DocumentFiles 
+        TextProperty="Name" 
+        ValueProperty="FullName" 
+        Style="width: 300px" Change=@OnDropdownChange />
     </div>
 </div>
 <br />
@@ -109,6 +114,13 @@
             }&nbsp;&nbsp;<br />
             @if (StoryLoaded)
             {
+                <RadzenLabel><b>Select Model:</b></RadzenLabel>
+                <RadzenDropDown @bind-Value=@SelectedModel
+                                Data=@colModels
+                                Style="width: 120px" />
+            }&nbsp;&nbsp;
+            @if (StoryLoaded)
+            {
                 <RadzenButton Text="Complete The Story" ButtonStyle="ButtonStyle.Success"
                               Click="CompleteStory"
                               Style="margin-bottom: 10px; width: 200px" />
@@ -129,6 +141,8 @@
     private string txtSummarizeCharacter = "";
     private bool StoryLoaded = false;
     private string txtNewStory = "";
+    private List<string> colModels = new List<string>() { "gpt-3.5-turbo", "gpt-4" };
+    string SelectedModel = "gpt-3.5-turbo";
     private string SelectedCharacter = "";
     private List<string> colCharacters = new List<string>();
     bool InProgress = false;
@@ -381,7 +395,7 @@
         {
             InProgress = true;
 
-            var result = await OrchestratorMethods.CompleteStory(txtNewStory, intMaxLoops, intChunkSize);
+            var result = await OrchestratorMethods.CompleteStory(txtNewStory, SelectedModel);
             InProgress = false;
 
             txtNewStory = result;
@@ -450,6 +464,31 @@
             {
                 StoryLoaded = true;
             }
+        }
+    }
+
+    void OnDropdownChange()
+    {
+        // Read the first line to see if the latest story is loaded
+        var AIOrchestratorMemoryPath =
+        $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/AIOrchestrator/AIOrchestratorMemory.csv";
+
+        string firstLine = "";
+        using (StreamReader sr = new StreamReader(AIOrchestratorMemoryPath))
+        {
+            firstLine = sr.ReadLine();
+        }
+
+        // Get the filename from the path
+        string fileName = Path.GetFileName(SelectedFile);
+
+        if (firstLine != (fileName + "|"))
+        {
+            StoryLoaded = false;
+        }
+        else
+        {
+            StoryLoaded = true;
         }
     }
 

@@ -80,7 +80,7 @@ namespace AIOrchestrator.Model
                 // Get a response from ChatGPT 
                 var FinalChatRequest = new ChatRequest(
                     chatPrompts,
-                    model: "gpt-3.5-turbo-0613",
+                    model: "gpt-3.5-turbo",
                     temperature: 0.0,
                     topP: 1,
                     frequencyPenalty: 0,
@@ -147,7 +147,7 @@ namespace AIOrchestrator.Model
             // Get a response from ChatGPT 
             var chatRequest = new ChatRequest(
                 chatPrompts,
-                model: "gpt-3.5-turbo-0613",
+                model: "gpt-3.5-turbo",
                 temperature: 0.0,
                 topP: 1,
                 frequencyPenalty: 0,

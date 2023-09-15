@@ -16,8 +16,8 @@ namespace AIOrchestrator.Model
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<string> CompleteStory(string NewStory, int intMaxLoops, int intChunkSize)
-        public async Task<string> CompleteStory(string NewStory, int intMaxLoops, int intChunkSize)
+        #region public async Task<string> CompleteStory(string NewStory, string SelectedModel)
+        public async Task<string> CompleteStory(string NewStory, string SelectedModel)
         {
             LogService.WriteToLog("CompleteStory - Start");
             string Organization = SettingsService.Organization;
@@ -73,7 +73,7 @@ namespace AIOrchestrator.Model
             // Get a response from ChatGPT 
             var FinalChatRequest = new ChatRequest(
                 chatPrompts,
-                model: "gpt-3.5-turbo-0613",
+                model: SelectedModel,
                 temperature: 0.0,
                 topP: 1,
                 frequencyPenalty: 0,
@@ -94,7 +94,8 @@ namespace AIOrchestrator.Model
         #region private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
         private string CreateSystemMessageStory(string paramNewText, string paramBackgroundText)
         {
-            return "You are a program that will write a paragraph to continue a story starting with ###New Text### " +
+            return "You are a program that will write a paragraph to continue a story starting " +
+                   "with the content in ###New Text###. Write the paragraph \n" +
                    "only using information from ###New Text### and ###Background Text###.\n" +
                    "Only respond with a paragraph that completes the story nothing else.\n" +
                    "Only use information from ###New Text### and ###Background Text###.\n" +
