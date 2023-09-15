@@ -53,13 +53,17 @@ namespace AIOrchestrator.Model
             dynamic Databasefile = AIOrchestratorDatabaseObject;
 
             // Get Background Text - Perform vector search using NewChapter
-            List<(string, float)> SearchResults = await SearchMemory(NewChapter, 10);
+            List<(string, float)> SearchResults = await SearchMemory(NewChapter, 20);
 
             // Create a single string from the first colum of SearchResults
             string BackgroundText = string.Join(",", SearchResults.Select(x => x.Item1));
 
+            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Background retrieved: {BackgroundText.Split(' ').Length} words."));
+
             // Trim BackgroundText to 5000 words (so we don't run out of tokens)
-            BackgroundText = OrchestratorMethods.TrimToMaxWords(BackgroundText, 5000);
+            BackgroundText = OrchestratorMethods.TrimToMaxWords(BackgroundText, 10000);
+
+            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Background trimmed to: {BackgroundText.Split(' ').Length} words."));
 
             // Update System Message
             SystemMessage = CreateSystemMessageChapter(NewChapter, BackgroundText);
@@ -72,6 +76,8 @@ namespace AIOrchestrator.Model
                 SystemMessage
                 )
             );
+
+            ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Call ChatGPT..."));
 
             // Get a response from ChatGPT 
             var FinalChatRequest = new ChatRequest(
