@@ -1,6 +1,8 @@
 # AIOrchestrator
 ### A sub project of [AIStoryBuilders](https://github.com/ADefWebserver/AIStoryBuilders)
 
+##### "This allows you to import a book and have it write an orginal chapter based on your description"
+
 ![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/39b7bab3-9932-47b5-adb3-11d00e2cca8c)
 
 ![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/25b6189a-b40f-4397-b71a-e4c262b2e56b)
