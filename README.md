@@ -1,5 +1,8 @@
 # AIOrchestrator
 ### A sub project of [AIStoryBuilders](https://github.com/ADefWebserver/AIStoryBuilders)
+
+![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/25b6189a-b40f-4397-b71a-e4c262b2e56b)
+
 ![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/fc84de22-af6d-48d3-9693-d4ee341facbe)
 
 ![image](https://github.com/ADefWebserver/AIOrchestrator/assets/1857799/d8bc287f-5493-44e0-bdb6-6019636b23cf)
